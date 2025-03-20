@@ -22,6 +22,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,7 @@ public class CaseStudyApiController {
     private static final Logger log = LoggerFactory.getLogger(CaseStudyApiController.class);
 
     @Operation(summary = "Get all case studies with pages")
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<CaseStudy>>> getCaseStudies(
             @PageableDefault(page = 0, size = 25, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -68,6 +70,7 @@ public class CaseStudyApiController {
 
     @Operation(summary = "Get case study by prov (T, ML, C)")
     @GetMapping("/prov/{type}")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<PagedModel<EntityModel<CaseStudy>>> getMethodName(
             @PathVariable @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type,
             @PageableDefault(page = 0, size = 25, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
