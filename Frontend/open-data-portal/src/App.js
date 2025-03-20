@@ -1,7 +1,8 @@
 import { CssBaseline } from "@mui/material";
 import { BrowserRouter, Routes, Route } from "react-router-dom"; // Importando Routes e Route
-import Home from "./pages/Home"; // Página inicial
-import Database from "./pages/Database"; // Sua página de banco de dados (crie-a se não existir)
+import Home from "./pages/Home";
+import Database from "./pages/Database";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} /> {/* Página inicial */}
         <Route path="/database" element={<Database />} /> {/* Página de banco de dados */}
+        <Route path="/admin" element={<Admin />} /> {/* Página de administração */}
       </Routes>
     </BrowserRouter>
   );
