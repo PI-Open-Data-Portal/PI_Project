@@ -8,7 +8,6 @@ import logo from '../assets/logopng.png';
 const Database = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', height: '100vh' }}>
-      {/* Coluna Esquerda com botões */}
       <Box
         sx={{
           width: '200px',
@@ -23,11 +22,10 @@ const Database = () => {
           top: '100px',
           bottom: 0,
           zIndex: 1,
-          paddingTop: '30px', // Adiciona espaço no topo antes dos botões
+          paddingTop: '30px',
         }}
       >
         
-        {/* Botões com links para diferentes tabelas */}
         <Link to="/database" style={{ textDecoration: 'none', marginBottom: '10px' }}>
           <Button
             variant="contained"
@@ -84,7 +82,6 @@ const Database = () => {
         </Link>
       </Box>
 
-      {/* Main Content com a tabela */}
       <Box
         sx={{
           flexGrow: 1,
@@ -92,10 +89,8 @@ const Database = () => {
           backgroundColor: '#f4f4f4',
         }}
       >
-        {/* Navbar */}
         <AppBar position="fixed" sx={{ backgroundColor: 'white', color: 'black', width: '100%' }}>
           <Toolbar>
-            {/* Logo envolvido com Link */}
             <Link to="/">
               <img src={logo} alt="Logo" width={100} height={100} />
             </Link>
@@ -105,7 +100,6 @@ const Database = () => {
           </Toolbar>
         </AppBar>
 
-        {/* Tabela */}
         <Box sx={{ marginTop: '100px', padding: 3 }}>
           <StickyHeadTable />
         </Box>
