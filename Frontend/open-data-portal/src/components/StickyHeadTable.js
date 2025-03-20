@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -7,59 +7,57 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
+import axios from 'axios';
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
 const columns = [
-  { id: 'name', label: 'Name', minWidth: 170 },
-  { id: 'code', label: 'ISO\u00a0Code', minWidth: 100 },
-  {
-    id: 'population',
-    label: 'Population',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toLocaleString('en-US'),
-  },
-  {
-    id: 'size',
-    label: 'Size\u00a0(km\u00b2)',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toLocaleString('en-US'),
-  },
-  {
-    id: 'density',
-    label: 'Density',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toFixed(2),
-  },
+  { id: 'id', label: 'ID', minWidth: 50 },
+  { id: 'containerPlate', label: 'Container Plate', minWidth: 150 },
+  { id: 'cargoDescription', label: 'Cargo Description', minWidth: 200 },
+  { id: 'harmonizedCode', label: 'Harmonized Code', minWidth: 100 },
+  { id: 'prov2', label: 'Prov2', minWidth: 100 },
+  { id: 'weight', label: 'Weight (kg)', minWidth: 100, align: 'right', format: (value) => value.toLocaleString() },
 ];
 
-const createData = (name, code, population, size) => {
-  const density = population / size;
-  return { name, code, population, size, density };
-};
-
-const rows = [
-  createData('India', 'IN', 1324171354, 3287263),
-  createData('China', 'CN', 1403500365, 9596961),
-  createData('Italy', 'IT', 60483973, 301340),
-  createData('United States', 'US', 327167434, 9833520),
-  createData('Canada', 'CA', 37602103, 9984670),
-  createData('Australia', 'AU', 25475400, 7692024),
-  createData('Germany', 'DE', 83019200, 357578),
-  createData('Ireland', 'IE', 4857000, 70273),
-  createData('Mexico', 'MX', 126577691, 1972550),
-  createData('Japan', 'JP', 126317000, 377973),
-  createData('France', 'FR', 67022000, 640679),
-  createData('United Kingdom', 'GB', 67545757, 242495),
-  createData('Russia', 'RU', 146793744, 17098246),
-  createData('Nigeria', 'NG', 200962417, 923768),
-  createData('Brazil', 'BR', 210147125, 8515767),
-];
-
-export default function StickyHeadTable() {
+export default function CaseStudyTable() {
+  const [caseStudies, setCaseStudies] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedProv2, setSelectedProv2] = useState('');
+  const [prov2Options, setProv2Options] = useState([]);
+
+  useEffect(() => {
+    fetchCaseStudies(page, rowsPerPage, selectedProv2);
+  }, [page, rowsPerPage, selectedProv2]);
+
+  const fetchCaseStudies = async (page, size, prov2) => {
+    try {
+      let response;
+      if (prov2) {
+        response = await axios.get(`http://localhost:8080/apiV1/casestudy/prov/${prov2}`, {
+          params: { page, size, sort: 'id,ASC' },
+        });
+      } else {
+        response = await axios.get('http://localhost:8080/apiV1/casestudy', {
+          params: { page, size, sort: 'id,ASC' },
+        });
+      }
+
+      if (response.data._embedded?.caseStudyList) {
+        const data = response.data._embedded.caseStudyList;
+        setCaseStudies(data);
+
+        if (!prov2) {
+          setProv2Options(['T', 'ML', 'C']);
+        }
+      } else {
+        setCaseStudies([]);
+        setProv2Options([]);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar case studies:', error);
+    }
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -70,49 +68,54 @@ export default function StickyHeadTable() {
     setPage(0);
   };
 
+  const handleFilterChange = (event) => {
+    setSelectedProv2(event.target.value);
+    setPage(0);
+  };
+
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-      <TableContainer sx={{ maxHeight: 600 }}> {/* Aumentei a altura de 440 para 600 */}
-        <Table stickyHeader aria-label="sticky table">
+    <Paper sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
+      <FormControl sx={{ minWidth: 200, marginBottom: 2 }}>
+        <InputLabel>Filter by Prov2</InputLabel>
+        <Select value={selectedProv2} onChange={handleFilterChange} displayEmpty>
+          <MenuItem value="">All</MenuItem>
+          {prov2Options.map((prov) => (
+            <MenuItem key={prov} value={prov}>{prov}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <TableContainer sx={{ maxHeight: 600 }}>
+        <Table stickyHeader aria-label="case study table">
           <TableHead>
             <TableRow>
               {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{ minWidth: column.minWidth }}
-                >
+                <TableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth }}>
                   {column.label}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
+            {caseStudies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
+              <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
+                {columns.map((column) => {
+                  const value = row[column.id];
+                  return (
+                    <TableCell key={column.id} align={column.align}>
+                      {column.format && typeof value === 'number' ? column.format(value) : value !== null && value !== undefined ? value : 'N/A'}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
       <TablePagination
         rowsPerPageOptions={[10, 25, 50]}
         component="div"
-        count={rows.length}
+        count={caseStudies.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
