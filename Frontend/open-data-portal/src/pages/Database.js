@@ -1,12 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Button, AppBar, Toolbar, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
-import StickyHeadTable from '../components/StickyHeadTable';
+import MainTable1 from '../components/MainTable1';
+import MainTable2 from '../components/MainTable2';
+// import MainTable3 from '../components/MainTable3';
 import axios from 'axios';
 
 import logo from '../assets/logopng.png';
 
 const Database = () => {
+  const [selectedTable, setSelectedTable] = useState('table1');
+
+  const renderTableComponent = () => {
+    switch (selectedTable) {
+      case 'table1':
+        return <MainTable1 />;
+      case 'table2':
+        return <MainTable2 />;
+      case 'table3':
+        // return <MainTable3 />;
+      default:
+        return <MainTable1 />;
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', height: '100vh' }}>
       <Box
@@ -26,61 +43,59 @@ const Database = () => {
           paddingTop: '30px',
         }}
       >
+        <Button
+          variant="contained"
+          onClick={() => setSelectedTable('table1')}
+          sx={{
+            width: '100%',
+            marginBottom: 1,
+            borderRadius: 2,
+            backgroundColor: selectedTable === 'table1' ? '#3a6d6d' : '#457884',
+            boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
+            '&:hover': {
+              backgroundColor: '#3a6d6d',
+              boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
+            },
+          }}
+        >
+          Ship Details
+        </Button>
         
-        <Link to="/database" style={{ textDecoration: 'none', marginBottom: '10px' }}>
-          <Button
-            variant="contained"
-            sx={{
-              width: '100%',
-              marginBottom: 1,
-              borderRadius: 2,
-              backgroundColor: '#457884',
-              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#3a6d6d',
-                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
-              },
-            }}
-          >
-            Tabela 1
-          </Button>
-        </Link>
-        <Link to="/database" style={{ textDecoration: 'none', marginBottom: '10px' }}>
-          <Button
-            variant="contained"
-            sx={{
-              width: '100%',
-              marginBottom: 1,
-              borderRadius: 2,
-              backgroundColor: '#457884',
-              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#3a6d6d',
-                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
-              },
-            }}
-          >
-            Tabela 2
-          </Button>
-        </Link>
-        <Link to="/database" style={{ textDecoration: 'none', marginBottom: '10px' }}>
-          <Button
-            variant="contained"
-            sx={{
-              width: '100%',
-              marginBottom: 1,
-              borderRadius: 2,
-              backgroundColor: '#457884',
-              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#3a6d6d',
-                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
-              },
-            }}
-          >
-            Tabela 3
-          </Button>
-        </Link>
+        <Button
+          variant="contained"
+          onClick={() => setSelectedTable('table2')}
+          sx={{
+            width: '100%',
+            marginBottom: 1,
+            borderRadius: 2,
+            backgroundColor: selectedTable === 'table2' ? '#3a6d6d' : '#457884',
+            boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
+            '&:hover': {
+              backgroundColor: '#3a6d6d',
+              boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
+            },
+          }}
+        >
+          container Details
+        </Button>
+        
+        <Button
+          variant="contained"
+          onClick={() => setSelectedTable('table3')}
+          sx={{
+            width: '100%',
+            marginBottom: 1,
+            borderRadius: 2,
+            backgroundColor: selectedTable === 'table3' ? '#3a6d6d' : '#457884',
+            boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
+            '&:hover': {
+              backgroundColor: '#3a6d6d',
+              boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
+            },
+          }}
+        >
+          Tabela 3
+        </Button>
       </Box>
 
       <Box
@@ -102,7 +117,7 @@ const Database = () => {
         </AppBar>
 
         <Box sx={{ marginTop: '100px', padding: 3 }}>
-          <StickyHeadTable />
+          {renderTableComponent()}
         </Box>
       </Box>
     </Box>
