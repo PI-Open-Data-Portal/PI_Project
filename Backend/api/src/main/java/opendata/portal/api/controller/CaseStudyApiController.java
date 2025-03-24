@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -28,7 +29,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import opendata.portal.api.service.CaseStudyService;
+import opendata.portal.api.dto.NST2007_2PStatDTO;
+import opendata.portal.api.dto.Prov2PrefixStatDTO;
+import opendata.portal.api.dto.WeightStatisticsDTO;
 import opendata.portal.api.model.CaseStudy;
+import opendata.portal.api.dto.DisembarkationPortStatDTO;
+
 
 @RestController
 @RequestMapping("/apiV1/casestudy")
@@ -113,5 +119,25 @@ public class CaseStudyApiController {
                         "Invalid sort property: " + order.getProperty() + ". Allowed properties: " + allowedProperties);
             }
         }
+    }
+
+        @GetMapping("/2p-products")
+    public ResponseEntity<List<NST2007_2PStatDTO>> getNST2007_2PProductStats() {
+        return ResponseEntity.ok(caseStudyService.getNST2007_2PProductStats());
+    }
+
+    @GetMapping("/prov2-prefix")
+    public ResponseEntity<List<Prov2PrefixStatDTO>> getProv2PrefixStats() {
+        return ResponseEntity.ok(caseStudyService.getProv2PrefixStats());
+    }
+
+    @GetMapping("/weight-statistics")
+    public ResponseEntity<WeightStatisticsDTO> getWeightStatistics() {
+        return ResponseEntity.ok(caseStudyService.getWeightStatistics());
+    }
+
+    @GetMapping("/embarkation-ports")
+    public ResponseEntity<List<DisembarkationPortStatDTO>> getEmbarkationPortFrequency() {
+        return ResponseEntity.ok(caseStudyService.getEmbarkationPortFrequency());
     }
 }
