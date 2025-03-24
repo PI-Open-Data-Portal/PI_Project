@@ -23,17 +23,17 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import opendata.portal.api.service.ContainerDetailsService;
 import opendata.portal.api.model.ContainerDetails;
 
-
 @RestController
 @RequestMapping("/apiV1/ContainerDetails")
 @Tag(name = "ContainerDetails", description = "Information about containers")
-public class ContainerDetailsController { 
+public class ContainerDetailsController {
 
     @Autowired
     private ContainerDetailsService ContainerDetailsService;
@@ -44,6 +44,7 @@ public class ContainerDetailsController {
     private static final Logger log = LoggerFactory.getLogger(ContainerDetailsController.class);
 
     @Operation(summary = "Get all ContainerDetails with pages")
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<ContainerDetails>>> getContainerDetails(
             @PageableDefault(page = 0, size = 25, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -56,9 +57,7 @@ public class ContainerDetailsController {
     @Operation(summary = "Get case study by code")
     @GetMapping("/{code}")
     public ResponseEntity<ContainerDetails> getContainerDetailsByCode(
-            @Size(min = 4, max = 4, message = "Code must be exactly 4 characters") 
-            @Pattern(regexp = "^[a-zA-Z0-9]{4}$", message = "Code must be alphanumeric") 
-            String code) {
+            @Size(min = 4, max = 4, message = "Code must be exactly 4 characters") @Pattern(regexp = "^[a-zA-Z0-9]{4}$", message = "Code must be alphanumeric") String code) {
         log.info("Getting case study by code: " + code);
 
         ContainerDetails ContainerDetails = ContainerDetailsService.getContainerDetailsByCode(code);
@@ -86,8 +85,7 @@ public class ContainerDetailsController {
                 "harmonizedCode",
                 "weight",
                 "agency_id",
-                "iso_size_id"
-                );
+                "iso_size_id");
         for (Sort.Order order : sort) {
             if (!allowedProperties.contains(order.getProperty())) {
                 throw new ResponseStatusException(
@@ -96,8 +94,5 @@ public class ContainerDetailsController {
             }
         }
     }
-
-
-
 
 }

@@ -56,6 +56,7 @@ public class CaseStudyApiController {
 
     @Operation(summary = "Get case study by id")
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<CaseStudy> getCaseStudyById(
             @PathVariable @Min(value = 0, message = "id must be positive") int id) {
         log.info("Getting case study by id: " + id);
