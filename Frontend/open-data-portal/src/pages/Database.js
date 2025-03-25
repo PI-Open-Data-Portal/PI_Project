@@ -5,6 +5,7 @@ import MainTable1 from '../components/MainTable1';
 import MainTable2 from '../components/MainTable2';
 import MainTable3 from '../components/MainTable3';
 import MainTable4 from '../components/MainTable4';
+import MainTable5 from '../components/MainTable5';
 
 import logo from '../assets/logopng.png';
 
@@ -21,6 +22,8 @@ const Database = () => {
         return <MainTable3 />;
       case 'table4':
         return <MainTable4 />;
+      case 'table5':
+        return <MainTable5 />;
       default:
         return <MainTable1 />;
     }
@@ -123,6 +126,25 @@ const Database = () => {
           >
             Embarcation Ports
           </Button>
+
+          <Button
+            variant="contained"
+            onClick={() => setSelectedTable('table5')}
+            sx={{
+              width: '100%',
+              marginBottom: 1,
+              borderRadius: 2,
+              backgroundColor: selectedTable === 'table5' ? '#3a6d6d' : '#457884',
+              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
+              '&:hover': {
+                backgroundColor: '#3a6d6d',
+                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
+              },
+            }}
+          >
+            Product Categories
+          </Button>
+
         </Box>
 
         <Box
