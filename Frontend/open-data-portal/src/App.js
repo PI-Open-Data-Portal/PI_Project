@@ -5,6 +5,7 @@ import Database from "./pages/Database";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 
+
 function App() {
   return (
     <BrowserRouter>

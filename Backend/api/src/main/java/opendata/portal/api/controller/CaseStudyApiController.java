@@ -38,6 +38,7 @@ import opendata.portal.api.dto.DisembarkationPortStatDTO;
 
 @RestController
 @RequestMapping("/apiV1/casestudy")
+@CrossOrigin(origins = "http://localhost:3000")
 @Tag(name = "Case Study", description = "The Case Study API with prov")
 public class CaseStudyApiController {
 
