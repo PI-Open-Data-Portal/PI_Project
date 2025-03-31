@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import opendata.portal.api.service.CaseStudyService;
 import opendata.portal.api.dto.NST2007_2PStatDTO;
@@ -34,7 +37,7 @@ import opendata.portal.api.dto.Prov2PrefixStatDTO;
 import opendata.portal.api.dto.WeightStatisticsDTO;
 import opendata.portal.api.model.CaseStudy;
 import opendata.portal.api.dto.DisembarkationPortStatDTO;
-
+import opendata.portal.api.dto.PortPairStatDTO;
 
 @RestController
 @RequestMapping("/apiV1/casestudy")
@@ -123,23 +126,62 @@ public class CaseStudyApiController {
         }
     }
 
-        @GetMapping("/2p-products")
-    public ResponseEntity<List<NST2007_2PStatDTO>> getNST2007_2PProductStats() {
-        return ResponseEntity.ok(caseStudyService.getNST2007_2PProductStats());
+    @GetMapping("/2p-products")
+    public ResponseEntity<List<NST2007_2PStatDTO>> getNST2007_2PProductStats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTranshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations) {
+        return ResponseEntity.ok(
+                caseStudyService.getNST2007_2PProductStats(startDate, endDate, isTranshipment, message,
+                        embarkationLocations, disembarkationLocations));
     }
 
     @GetMapping("/prov2-prefix")
-    public ResponseEntity<List<Prov2PrefixStatDTO>> getProv2PrefixStats() {
-        return ResponseEntity.ok(caseStudyService.getProv2PrefixStats());
+    public ResponseEntity<List<Prov2PrefixStatDTO>> getProv2PrefixStats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTransshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations) {
+        return ResponseEntity
+                .ok(caseStudyService.getProv2PrefixStats(startDate, endDate, isTransshipment, message,
+                        embarkationLocations, disembarkationLocations));
     }
 
     @GetMapping("/weight-statistics")
-    public ResponseEntity<WeightStatisticsDTO> getWeightStatistics() {
-        return ResponseEntity.ok(caseStudyService.getWeightStatistics());
+    public ResponseEntity<WeightStatisticsDTO> getWeightStatistics(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTransshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations) {
+        return ResponseEntity
+                .ok(caseStudyService.getWeightStatistics(startDate, endDate, isTransshipment, message,
+                        embarkationLocations, disembarkationLocations));
     }
 
+    @Deprecated
     @GetMapping("/embarkation-ports")
     public ResponseEntity<List<DisembarkationPortStatDTO>> getEmbarkationPortFrequency() {
-        return ResponseEntity.ok(caseStudyService.getEmbarkationPortFrequency());
+        return ResponseEntity.ok(
+                caseStudyService.getEmbarkationPortFrequency());
+    }
+
+    @GetMapping("/v2/port-pairs")
+    public ResponseEntity<List<PortPairStatDTO>> getPortPairFrequency(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTranshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations) {
+        return ResponseEntity.ok(
+                caseStudyService.getPortPairFrequency(startDate, endDate, isTranshipment, message,
+                        embarkationLocations, disembarkationLocations));
     }
 }
