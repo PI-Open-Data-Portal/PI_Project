@@ -53,6 +53,7 @@ const Database = () => {
             alignItems: 'stretch',
             justifyContent: 'flex-start',
             fontFamily: "'Kdam Thmor Pro', sans-serif",
+            minWidth: '200px',
           }}
         >
           <Button
