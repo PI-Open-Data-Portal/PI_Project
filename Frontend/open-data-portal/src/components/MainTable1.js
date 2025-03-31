@@ -23,7 +23,6 @@ const columns = [
 
 export default function CaseStudyTable() {
   const [caseStudies, setCaseStudies] = useState([]);
-  const [filteredCaseStudies, setFilteredCaseStudies] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [selectedProv2, setSelectedProv2] = useState('');
@@ -32,37 +31,84 @@ export default function CaseStudyTable() {
   const [containerPlateSearch, setContainerPlateSearch] = useState('');
   const [selectedCaseStudy, setSelectedCaseStudy] = useState(null);
   const [openModal, setOpenModal] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchCaseStudies();
-  }, []);
-
-  useEffect(() => {
-    let filtered = [...caseStudies];
-    if (nst20073pSearch) {
-      filtered = filtered.filter(study => study.nst20073P?.toLowerCase().includes(nst20073pSearch.toLowerCase()));
-    }
-    if (containerPlateSearch) {
-      filtered = filtered.filter(study => study.containerPlate?.toLowerCase().includes(containerPlateSearch.toLowerCase()));
-    }
-    setFilteredCaseStudies(filtered);
-    setPage(0);
-  }, [caseStudies, nst20073pSearch, containerPlateSearch]);
+  }, [page, rowsPerPage, selectedProv2, nst20073pSearch, containerPlateSearch]);
 
   const fetchCaseStudies = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8080/apiV1/casestudy', {
-        params: { page: 0, size: 2001, sort: 'id,ASC' },
-      });
+      // Build query parameters for filtering
+      const params = {
+        page: page,
+        size: rowsPerPage,
+        sort: 'id,ASC'
+      };
+
+      // Add filters if they exist
+      if (selectedProv2) {
+        params.prov2 = selectedProv2;
+      }
+      if (nst20073pSearch) {
+        params.nst20073P = nst20073pSearch;
+      }
+      if (containerPlateSearch) {
+        params.containerPlate = containerPlateSearch;
+      }
+
+      const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
+      
       if (response.data._embedded?.caseStudyList) {
-        const data = response.data._embedded.caseStudyList;
-        setCaseStudies(data);
-        setFilteredCaseStudies(data);
+        setCaseStudies(response.data._embedded.caseStudyList);
+        // Extract total items from page metadata
+        setTotalItems(response.data.page.totalElements);
+      } else {
+        setCaseStudies([]);
+        setTotalItems(0);
+      }
+
+      // If prov2Options isn't initialized yet, set it
+      if (prov2Options.length === 0) {
         setProv2Options(['T', 'ML', 'C']);
       }
     } catch (error) {
       console.error('Error fetching case studies:', error);
+      setCaseStudies([]);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0);
+  };
+
+  const handleFilterChange = () => {
+    setPage(0); // Reset to first page when filters change
+  };
+
+  const handleProv2Change = (e) => {
+    setSelectedProv2(e.target.value);
+    handleFilterChange();
+  };
+
+  const handleNst20073pSearchChange = (e) => {
+    setNst20073pSearch(e.target.value);
+    handleFilterChange();
+  };
+
+  const handleContainerPlateSearchChange = (e) => {
+    setContainerPlateSearch(e.target.value);
+    handleFilterChange();
   };
 
   const fetchCaseStudyDetails = async (id) => {
@@ -81,7 +127,7 @@ export default function CaseStudyTable() {
         <Grid item xs={12} md={3}>
           <FormControl fullWidth variant="outlined">
             <InputLabel>Filter by Prov2</InputLabel>
-            <Select value={selectedProv2} onChange={(e) => setSelectedProv2(e.target.value)}>
+            <Select value={selectedProv2} onChange={handleProv2Change}>
               <MenuItem value="">All</MenuItem>
               {prov2Options.map((prov) => (
                 <MenuItem key={prov} value={prov}>{prov}</MenuItem>
@@ -90,10 +136,20 @@ export default function CaseStudyTable() {
           </FormControl>
         </Grid>
         <Grid item xs={12} md={4.5}>
-          <TextField fullWidth label="Search by Container Plate" value={containerPlateSearch} onChange={(e) => setContainerPlateSearch(e.target.value)} />
+          <TextField 
+            fullWidth 
+            label="Search by Container Plate" 
+            value={containerPlateSearch} 
+            onChange={handleContainerPlateSearchChange} 
+          />
         </Grid>
         <Grid item xs={12} md={4.5}>
-          <TextField fullWidth label="Search by Code" value={nst20073pSearch} onChange={(e) => setNst20073pSearch(e.target.value)} />
+          <TextField 
+            fullWidth 
+            label="Search by Code" 
+            value={nst20073pSearch} 
+            onChange={handleNst20073pSearchChange} 
+          />
         </Grid>
       </Grid>
       <TableContainer sx={{ maxHeight: 600 }}>
@@ -101,37 +157,55 @@ export default function CaseStudyTable() {
           <TableHead>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.id} align={column.align}>{column.label}</TableCell>
+                <TableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth }}>
+                  {column.label}
+                </TableCell>
               ))}
-              <TableCell>
-                
-              </TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredCaseStudies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-              <TableRow hover key={row.id}>
-                {columns.map((column) => (
-                  <TableCell key={column.id} align={column.align}>{row[column.id] || 'N/A'}</TableCell>
-                ))}
-                <TableCell>
-                  <IconButton color="primary" onClick={() => fetchCaseStudyDetails(row.id)}>
-                    <VisibilityIcon />
-                  </IconButton>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} align="center">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : caseStudies.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} align="center">
+                  No data found
+                </TableCell>
+              </TableRow>
+            ) : (
+              caseStudies.map((row) => (
+                <TableRow hover key={row.id}>
+                  {columns.map((column) => (
+                    <TableCell key={column.id} align={column.align}>
+                      {column.format && typeof row[column.id] === 'number'
+                        ? column.format(row[column.id])
+                        : row[column.id] || 'N/A'}
+                    </TableCell>
+                  ))}
+                  <TableCell>
+                    <IconButton color="primary" onClick={() => fetchCaseStudyDetails(row.id)}>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[10, 25, 50]}
+        rowsPerPageOptions={[10, 25, 50, 100]}
         component="div"
-        count={filteredCaseStudies.length}
+        count={totalItems}
         rowsPerPage={rowsPerPage}
         page={page}
-        onPageChange={(e, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => setRowsPerPage(+e.target.value)}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
       />
       <Dialog open={openModal} onClose={() => setOpenModal(false)}>
         <DialogTitle>Case Study Details</DialogTitle>
