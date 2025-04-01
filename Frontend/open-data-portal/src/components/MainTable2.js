@@ -74,7 +74,7 @@ export default function MainTable2() {
   const fetchContainerDetails = async (page, size) => {
     try {
       const response = await axios.get('http://localhost:8080/apiV1/ContainerDetails', {
-        params: { page, size:2000, sort: 'id,ASC' },
+        params: { page, size:rowsPerPage, sort: 'id,ASC' },
       });
   
       if (response.data._embedded) {
