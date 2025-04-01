@@ -28,6 +28,7 @@ import opendata.portal.api.model.NST2007_3PTABLE;
 
 @RestController
 @RequestMapping("/apiV1/nst")
+@Deprecated
 @Tag(name = "NST", description = "The NST API")
 public class NSTController {
 

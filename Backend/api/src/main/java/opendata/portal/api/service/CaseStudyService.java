@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.data.jpa.domain.Specification;
 
 import opendata.portal.api.repository.CaseStudyRepository;
 import opendata.portal.api.model.CaseStudy;
@@ -41,8 +42,54 @@ public class CaseStudyService {
         return caseStudyRepository.findByProv2StartingWith(pageable, prov);
     }
 
-    public Page<CaseStudy> getPaginatedCaseStudies(Pageable pageable) {
-        return caseStudyRepository.findAll(pageable);
+    public Page<CaseStudy> getPaginatedCaseStudies(Pageable pageable,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isTranshipment,
+            String message,
+            String embarkationLocations,
+            String disembarkationLocations,
+            String type) {
+
+        // Validate message if provided
+        if (message != null && !isValidMessage(message)) {
+            throw new IllegalArgumentException("Invalid message type: " + message);
+        }
+
+        // Use Specification to build dynamic query with the same filters
+        Specification<CaseStudy> spec = Specification.where(null);
+
+        if (startDate != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("movementDate"), startDate));
+        }
+
+        if (endDate != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("movementDate"), endDate));
+        }
+
+        if (isTranshipment != null) {
+            String transhipmentValue = isTranshipment ? "S" : "N";
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("transhipment"), transhipmentValue));
+        }
+
+        if (message != null && !message.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("message"), message));
+        }
+
+        if (embarkationLocations != null && !embarkationLocations.isEmpty()) {
+            spec = spec.and(
+                    (root, query, cb) -> cb.like(root.get("embarkationPort"), "%" + embarkationLocations + "%"));
+        }
+
+        if (disembarkationLocations != null && !disembarkationLocations.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("disembarkationPort"),
+                    "%" + disembarkationLocations + "%"));
+        }
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("prov2"), type + "%"));
+        }
+
+        return caseStudyRepository.findAll(spec, pageable);
     }
 
     public List<NST2007_2PStatDTO> getNST2007_2PProductStats(
@@ -57,9 +104,12 @@ public class CaseStudyService {
         if (message != null && !isValidMessage(message)) {
             throw new IllegalArgumentException("Invalid message type: " + message);
         }
-
+        String transhipmentValue = null;
+        if (isTranshipment != null) {
+            transhipmentValue = isTranshipment ? "S" : "N";
+        }
         List<Object[]> results = caseStudyRepository.findNST2007_2PProductStats(
-                startDate, endDate, isTranshipment, message, embarkationLocations, disembarkationLocations);
+                startDate, endDate, transhipmentValue, message, embarkationLocations, disembarkationLocations);
 
         return results.stream()
                 .map(result -> new NST2007_2PStatDTO(
@@ -89,7 +139,12 @@ public class CaseStudyService {
         if (message != null && !isValidMessage(message)) {
             throw new IllegalArgumentException("Invalid message type: " + message);
         }
-        List<Object[]> results = caseStudyRepository.findProv2PrefixStats(startDate, endDate, isTranshipment, message,
+        String transhipmentValue = null;
+        if (isTranshipment != null) {
+            transhipmentValue = isTranshipment ? "S" : "N";
+        }
+        List<Object[]> results = caseStudyRepository.findProv2PrefixStats(startDate, endDate, transhipmentValue,
+                message,
                 embarkationLocations, disembarkationLocations);
         return results.stream()
                 .map(result -> new Prov2PrefixStatDTO(
@@ -107,7 +162,12 @@ public class CaseStudyService {
         if (message != null && !isValidMessage(message)) {
             throw new IllegalArgumentException("Invalid message type: " + message);
         }
-        List<Object[]> results = caseStudyRepository.findWeightStatistics(startDate, endDate, isTranshipment, message,
+        String transhipmentValue = null;
+        if (isTranshipment != null) {
+            transhipmentValue = isTranshipment ? "S" : "N";
+        }
+        List<Object[]> results = caseStudyRepository.findWeightStatistics(startDate, endDate, transhipmentValue,
+                message,
                 embarkationLocations, disembarkationLocations);
         if (results.isEmpty()) {
             return new WeightStatisticsDTO(0.0, 0.0, 0.0);
@@ -139,8 +199,12 @@ public class CaseStudyService {
         if (message != null && !isValidMessage(message)) {
             throw new IllegalArgumentException("Invalid message type: " + message);
         }
+        String transhipmentValue = null;
+        if (isTranshipment != null) {
+            transhipmentValue = isTranshipment ? "S" : "N";
+        }
         List<Object[]> results = caseStudyRepository.findPortPairFrequency(
-                startDate, endDate, isTranshipment, message, embarkationLocations, disembarkationLocations);
+                startDate, endDate, transhipmentValue, message, embarkationLocations, disembarkationLocations);
 
         return results.stream()
                 .map(result -> new PortPairStatDTO(

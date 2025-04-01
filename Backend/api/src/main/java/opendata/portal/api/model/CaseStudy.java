@@ -1,5 +1,7 @@
 package opendata.portal.api.model;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -25,7 +27,7 @@ public class CaseStudy {
     private String message;
 
     @Column(name = "Movement_Date")
-    private String movementDate;
+    private LocalDate movementDate;
 
     @Column(name = "Embarkation_Port")
     private String embarkationPort;

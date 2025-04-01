@@ -4,6 +4,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,7 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> {
+public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> , JpaSpecificationExecutor<CaseStudy> {
 
         // Find entries where prov2 starts with "ML"
         Page<CaseStudy> findByProv2StartingWith(Pageable pageable, String prefix);
@@ -37,7 +38,7 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> {
         List<Object[]> findNST2007_2PProductStats(
                         @Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate,
-                        @Param("isTranshipment") Boolean isTranshipment,
+                        @Param("isTranshipment") String isTranshipment,
                         @Param("message") String message,
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
@@ -59,7 +60,7 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> {
         List<Object[]> findProv2PrefixStats(
                         @Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate,
-                        @Param("isTranshipment") Boolean isTranshipment,
+                        @Param("isTranshipment") String isTranshipment,
                         @Param("message") String message,
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
@@ -93,7 +94,7 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> {
         List<Object[]> findWeightStatistics(
                         @Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate,
-                        @Param("isTranshipment") Boolean isTranshipment,
+                        @Param("isTranshipment") String isTranshipment,
                         @Param("message") String message,
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
@@ -124,7 +125,7 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> {
         List<Object[]> findPortPairFrequency(
                         @Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate,
-                        @Param("isTranshipment") Boolean isTranshipment,
+                        @Param("isTranshipment") String isTranshipment,
                         @Param("message") String message,
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
