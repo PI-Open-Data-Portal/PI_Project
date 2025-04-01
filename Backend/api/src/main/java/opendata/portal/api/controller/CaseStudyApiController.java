@@ -57,10 +57,19 @@ public class CaseStudyApiController {
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<CaseStudy>>> getCaseStudies(
-            @PageableDefault(page = 0, size = 25, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(page = 0, size = 25, sort = "id", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTranshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations,
+            @RequestParam(required = false) @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type) {
         log.info("Getting all case studies with pages");
-        validateSortProperties(pageable.getSort());
-        Page<CaseStudy> caseStudies = caseStudyService.getPaginatedCaseStudies(pageable);
+        // validateSortProperties(pageable.getSort());
+        Page<CaseStudy> caseStudies = caseStudyService.getPaginatedCaseStudies(pageable, startDate, endDate,
+                isTranshipment, message,
+                embarkationLocations, disembarkationLocations, type);
         return ResponseEntity.ok(assembler.toModel(caseStudies));
     }
 
@@ -80,6 +89,7 @@ public class CaseStudyApiController {
     }
 
     @Operation(summary = "Get case study by prov (T, ML, C)")
+    @Deprecated
     @GetMapping("/prov/{type}")
     @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<PagedModel<EntityModel<CaseStudy>>> getMethodName(
