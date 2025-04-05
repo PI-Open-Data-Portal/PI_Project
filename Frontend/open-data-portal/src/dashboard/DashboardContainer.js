@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 
 // Import all component sections
-import PortPairsAnalysis from "./PortPairsAnalysis";
+import { PortPairsAnalysis } from "./PortPairsAnalysis";
 import ProductAnalysis from "./ProductAnalysis";
 import ProvenanceAnalysis from "./ProvenanceAnalysis";
 import WeightStatistics from "./WeightStatistics";

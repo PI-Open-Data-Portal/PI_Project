@@ -1,60 +1,18 @@
-import { useCallback } from "react";
-import {
-  Grid,
-  Typography,
-  Paper
-} from "@mui/material";
+// PortPairsCharts.jsx
+import React from "react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
   Cell
 } from "recharts";
+import { Grid, Typography, Paper } from "@mui/material";
 
-// Color palette
-const COLORS = [
-  '#0088FE', '#00C49F', '#FFBB28', '#FF8042', 
-  '#8884D8', '#82CA9D', '#FF6384', '#36A2EB', 
-  '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-];
-
-export default function PortPairsCharts({ portPairsData }) {
-  // Função para obter os top 10 portos de embarque
-  const getTopEmbarkationPorts = useCallback(() => {
-    // Agrupar por porto de embarque
-    const embarkationCounts = {};
-    
-    portPairsData.forEach(pair => {
-      embarkationCounts[pair.embarkationPort] = (embarkationCounts[pair.embarkationPort] || 0) + pair.count;
-    });
-    
-    // Converter para array, ordenar e pegar os top 10
-    return Object.entries(embarkationCounts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [portPairsData]);
-
-  // Função para obter os top 10 portos de desembarque
-  const getTopDisembarkationPorts = useCallback(() => {
-    // Agrupar por porto de desembarque
-    const disembarkationCounts = {};
-    
-    portPairsData.forEach(pair => {
-      disembarkationCounts[pair.disembarkationPort] = (disembarkationCounts[pair.disembarkationPort] || 0) + pair.count;
-    });
-    
-    // Converter para array, ordenar e pegar os top 10
-    return Object.entries(disembarkationCounts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [portPairsData]);
-
+export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkationPorts, COLORS }) {
   // Custom tooltip for Bar charts
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -84,7 +42,7 @@ export default function PortPairsCharts({ portPairsData }) {
 
   return (
     <Grid container spacing={3}>
-      {/* Gráfico de portos de embarque */}
+      {/* Embarkation Ports Chart */}
       <Grid item xs={12} md={6}>
         <Typography 
           variant="h6" 
@@ -98,7 +56,7 @@ export default function PortPairsCharts({ portPairsData }) {
         </Typography>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
-            data={getTopEmbarkationPorts()}
+            data={topEmbarkationPorts}
             margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
@@ -120,7 +78,7 @@ export default function PortPairsCharts({ portPairsData }) {
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="value" fill="#457884">
-              {getTopEmbarkationPorts().map((entry, index) => (
+              {topEmbarkationPorts.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Bar>
@@ -128,7 +86,7 @@ export default function PortPairsCharts({ portPairsData }) {
         </ResponsiveContainer>
       </Grid>
       
-      {/* Gráfico de portos de desembarque */}
+      {/* Disembarkation Ports Chart */}
       <Grid item xs={12} md={6}>
         <Typography 
           variant="h6" 
@@ -138,11 +96,11 @@ export default function PortPairsCharts({ portPairsData }) {
             fontFamily: "'Kdam Thmor Pro', sans-serif"
           }}
         >
-          Desembarkations Ports
+          Disembarkation Ports
         </Typography>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
-            data={getTopDisembarkationPorts()}
+            data={topDisembarkationPorts}
             margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
@@ -164,7 +122,7 @@ export default function PortPairsCharts({ portPairsData }) {
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="value" fill="#457884">
-              {getTopDisembarkationPorts().map((entry, index) => (
+              {topDisembarkationPorts.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Bar>

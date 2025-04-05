@@ -1,18 +1,17 @@
-import { useState } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Paper,
   Grid,
-  Typography,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Box,
   Chip,
+  Box,
   Button,
   FormControlLabel,
-  Switch
+  Switch,
+  Typography
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -20,32 +19,59 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import ClearIcon from '@mui/icons-material/Clear';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-export default function PortPairsFilters({ allPorts, onApplyFilters }) {
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [message, setMessage] = useState("");
-  const [embarkationLocations, setEmbarkationLocations] = useState([]);
-  const [disembarkationLocations, setDisembarkationLocations] = useState([]);
-  const [isTransshipment, setIsTransshipment] = useState(false);
+// Lista de tipos de mensagem válidos
+const MESSAGE_TYPES = [
+  "ARRIVAL_ANNOUNCEMENT", 
+  "ARRIVAL_GUIDE", 
+  "DECONSOLIDATION_GUIDE", 
+  "DEPARTURE_GUIDE", 
+  "DISEMBARKATION_REPORT", 
+  "EMBARKATION_REPORT", 
+  "LOAD_INSTRUCTION", 
+  "LOAD_REPORT", 
+  "UNLOAD_INSTRUCTION", 
+  "UNLOAD_REPORT", 
+  "VERIFIED_WEIGHING"
+];
 
-  const handleClearFilters = () => {
+export default function PortPairsFilters({
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  message,
+  setMessage,
+  embarkationLocations,
+  setEmbarkationLocations,
+  disembarkationLocations,
+  setDisembarkationLocations,
+  allPorts,
+  onReset,
+  onApply
+}) {
+  // Ref para o botão de Apply Filters
+  const applyButtonRef = useRef(null);
+
+  // Nova função que simula "dois cliques" no botão Clear
+  const handleDoubleClick = () => {
+    // Primeiro limpa todos os filtros
     setStartDate(null);
     setEndDate(null);
     setMessage("");
     setEmbarkationLocations([]);
     setDisembarkationLocations([]);
-    setIsTransshipment(false);
-  };
-
-  const handleApplyFilters = () => {
-    onApplyFilters({
-      startDate,
-      endDate,
-      message,
-      embarkationLocations,
-      disembarkationLocations,
-      isTransshipment
-    });
+    
+    // Em seguida, simula um clique no botão Apply
+    // Opção 1: Chama diretamente a função onApply
+    // onApply();
+    
+    // Opção 2 (alternativa): Simula um clique físico no botão Apply
+    // Se por algum motivo a opção 1 não funcionar, você pode descomentar este código
+     setTimeout(() => {
+       if (applyButtonRef.current) {
+        applyButtonRef.current.click();
+       }
+     }, 100);
   };
 
   return (
@@ -98,42 +124,32 @@ export default function PortPairsFilters({ allPorts, onApplyFilters }) {
         </Grid>
         
         <Grid item xs={12} md={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="message-label" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
-                Message
-              </InputLabel>
-              <Select
-                labelId="message-label"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                label="Message"
-                sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-              >
-                {[
-                  "ARRIVAL_ANNOUNCEMENT",
-                  "ARRIVAL_GUIDE",
-                  "DECONSOLIDATION_GUIDE",
-                  "DEPARTURE_GUIDE",
-                  "DISEMBARKATION_REPORT",
-                  "EMBARKATION_REPORT",
-                  "LOAD_INSTRUCTION",
-                  "LOAD_REPORT",
-                  "UNLOAD_INSTRUCTION",
-                  "UNLOAD_REPORT",
-                  "VERIFIED_WEIGHING"
-                ].map((msg) => (
-                  <MenuItem 
-                    key={msg} 
-                    value={msg}
-                    sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-                  >
-                    {msg}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
+          <FormControl fullWidth size="small">
+            <InputLabel id="message-label" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
+              Message Type
+            </InputLabel>
+            <Select
+              labelId="message-label"
+              value={message}
+              label="Message Type"
+              onChange={(e) => setMessage(e.target.value)}
+              sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+            >
+              <MenuItem value="" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
+                <em>None</em>
+              </MenuItem>
+              {MESSAGE_TYPES.map((type) => (
+                <MenuItem 
+                  key={type} 
+                  value={type}
+                  sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+                >
+                  {type}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
         
         <Grid item xs={12} md={5}>
           <FormControl fullWidth size="small">
@@ -209,12 +225,7 @@ export default function PortPairsFilters({ allPorts, onApplyFilters }) {
         
         <Grid item xs={12} md={2}>
           <FormControlLabel
-            control={
-              <Switch
-                checked={isTransshipment}
-                onChange={(e) => setIsTransshipment(e.target.checked)}
-              />
-            }
+            control={<Switch />}
             label="Is Transhipment"
             sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
           />
@@ -224,7 +235,7 @@ export default function PortPairsFilters({ allPorts, onApplyFilters }) {
           <Button 
             variant="outlined" 
             startIcon={<ClearIcon />}
-            onClick={handleClearFilters}
+            onClick={handleDoubleClick} // Agora usando a função de duplo clique
             sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
           >
             Clear
@@ -233,7 +244,8 @@ export default function PortPairsFilters({ allPorts, onApplyFilters }) {
             variant="contained" 
             color="primary"
             startIcon={<RefreshIcon />}
-            onClick={handleApplyFilters}
+            onClick={onApply}
+            ref={applyButtonRef} // Adicionando a ref aqui
             sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
           >
             Apply Filters
