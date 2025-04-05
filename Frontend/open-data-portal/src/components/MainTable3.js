@@ -51,7 +51,6 @@ import {
   Chip,
   Divider
 } from "@mui/material";
-import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -85,7 +84,6 @@ export default function UnifiedDashboard() {
   const [disembarkationLocations, setDisembarkationLocations] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [allPorts, setAllPorts] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
   
   // Color palette
   const COLORS = [
@@ -166,70 +164,6 @@ export default function UnifiedDashboard() {
     }
   };
 
-  const clearFilters = () => {
-    // Limpar os filtros
-    setEmbarkationLocations([]);
-    setDisembarkationLocations([]);
-    
-    // Reiniciar os dados filtrados
-    setFilteredPortPairsData(portPairsData);
-    
-    // Se necessário, também pode resetar as variáveis de data e mensagem, caso haja
-    setStartDate(null);
-    setEndDate(null);
-    setMessage('');
-    
-    // Processar os dados novamente sem os filtros
-    processDataForHeatmap(portPairsData);
-  };
-  
-
-  // Process data for heatmap visualization
-  const processDataForHeatmap = (data) => {
-    if (!data || data.length === 0) return;
-    
-    // Get top 10 embarkation and disembarkation ports by frequency
-    const embarkCounts = {};
-    const disembarkCounts = {};
-    
-    data.forEach(pair => {
-      embarkCounts[pair.embarkationPort] = (embarkCounts[pair.embarkationPort] || 0) + pair.count;
-      disembarkCounts[pair.disembarkationPort] = (disembarkCounts[pair.disembarkationPort] || 0) + pair.count;
-    });
-    
-    const topEmbark = Object.entries(embarkCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(entry => entry[0]);
-      
-    const topDisembark = Object.entries(disembarkCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(entry => entry[0]);
-    
-    // Create heatmap data for top ports
-    const heatmapData = [];
-    
-    topEmbark.forEach((embark, i) => {
-      topDisembark.forEach((disembark, j) => {
-        const found = data.find(d => 
-          d.embarkationPort === embark && 
-          d.disembarkationPort === disembark
-        );
-        
-        heatmapData.push({
-          x: j,
-          y: i,
-          xPort: disembark,
-          yPort: embark,
-          value: found ? found.count : 0
-        });
-      });
-    });
-    
-    setHeatmapData(heatmapData);
-  };
-
   // Add this function to fetch the port pairs data
   const fetchPortPairsData = async () => {
     try {
@@ -248,9 +182,6 @@ export default function UnifiedDashboard() {
       
       setPortPairsData(response.data);
       setFilteredPortPairsData(response.data);
-      
-      // Generate data for heatmap
-      processDataForHeatmap(response.data);
       
       // Extract all unique ports for filters
       const ports = new Set();
@@ -575,7 +506,6 @@ const getTopDisembarkationPorts = useCallback(() => {
                 <FormControlLabel
                   control={
                     <Switch
-
                     />
                   }
                   label="Is Transhipment"
@@ -593,7 +523,6 @@ const getTopDisembarkationPorts = useCallback(() => {
                     setMessage("");
                     setEmbarkationLocations([]);
                     setDisembarkationLocations([]);
-                    clearFilters();
                     
                   }}
                   sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
@@ -626,102 +555,12 @@ const getTopDisembarkationPorts = useCallback(() => {
             centered
             sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
           >
-            <Tab label="Heatmap" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
             <Tab label="Gráficos" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
             <Tab label="Data Table" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
           </Tabs>
         </Box>
 
-        
-
-        {/* Heatmap Visualization */}
 {tabValue === 0 && (
-  <Box sx={{ height: 500, width: '100%' }}>
-    <Typography 
-      variant="body2" 
-      sx={{ 
-        textAlign: 'center', 
-        mb: 0,
-        fontFamily: "'Kdam Thmor Pro', sans-serif"
-      }}
-    >
-      Heatmap of top 10 embarkation and disembarkation ports (intensity indicates frequency)
-    </Typography>
-    <ResponsiveContainer width="100%" height="90%">
-      <ScatterChart
-        margin={{ top: 60, right: 20, bottom: 20, left: 100 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          type="number" 
-          dataKey="x" 
-          name="Disembarkation Port" 
-          tick={false}
-          axisLine={true}
-          domain={[-1, 10]}
-        />
-        <YAxis 
-          type="number" 
-          dataKey="y" 
-          name="Embarkation Port" 
-          tick={false}
-          axisLine={true}
-          domain={[-1, 10]}
-        />
-        <ZAxis 
-          type="number" 
-          dataKey="value" 
-          range={[100, 800]} 
-          name="count" 
-        />
-        <Tooltip 
-          cursor={{ strokeDasharray: '3 3' }}
-          content={({ active, payload }) => {
-            if (active && payload && payload.length > 0) {
-              const data = payload[0].payload;
-              return (
-                <div style={{ 
-                  backgroundColor: '#fff', 
-                  border: '1px solid #ccc',
-                  padding: '12px 15px',
-                  borderRadius: '4px',
-                  fontSize: '16px', // Larger font for tooltip
-                  fontFamily: "'Kdam Thmor Pro', sans-serif",
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
-                }}>
-                  {`${data.xPort} -> ${data.yPort} : ${data.value}`}
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
-        
-        <Scatter 
-          name="count" 
-          data={heatmapData} 
-          fill="#8884d8"
-          shape="square"
-          fillOpacity={0.8}
-        >
-          {heatmapData.map((entry, index) => {
-            // Color based on value
-            const maxValue = Math.max(...heatmapData.map(d => d.value));
-            const colorIndex = Math.floor((entry.value / maxValue) * (COLORS.length - 1));
-            
-            return (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.value > 0 ? COLORS[colorIndex % COLORS.length] : '#f5f5f5'} 
-              />
-            );
-          })}
-        </Scatter>
-      </ScatterChart>
-    </ResponsiveContainer>
-  </Box>
-)}
-{tabValue === 1 && (
   <Grid container spacing={3}>
     {/* Gráfico de portos de embarque */}
     <Grid item xs={12} md={6}>
@@ -813,9 +652,8 @@ const getTopDisembarkationPorts = useCallback(() => {
   </Grid>
 )}
 
-
         {/* Data Table */}
-        {tabValue === 2 && (
+        {tabValue === 1 && (
           <TableContainer 
             component={Paper}
             sx={{ 
@@ -906,170 +744,6 @@ const getTopDisembarkationPorts = useCallback(() => {
             )}
             </CardContent>
           </Card>
-
-            {/* Embarkation Section */}
-            {/* 
-            <Card 
-            elevation={3} 
-            sx={{ 
-              marginBottom: 4, 
-              overflow: 'visible'
-            }}
-            >
-            <CardHeader 
-              title="Shipments by Disembarkation Port" 
-              titleTypographyProps={{
-              sx: { 
-                fontFamily: "'Kdam Thmor Pro', sans-serif",
-                color: '#2c3e50',
-                fontWeight: 600
-              }
-              }}
-            />
-            <CardContent>
-              <TextField
-              fullWidth
-              variant="outlined"
-              label="Search by Disembarkation Port"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-                ),
-                sx: {
-                borderRadius: 2,
-                fontFamily: "'Kdam Thmor Pro', sans-serif",
-                marginBottom: 2
-                }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                fontFamily: "'Kdam Thmor Pro', sans-serif",
-                '& fieldset': {
-                  borderColor: '#457884',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#3a6d6d',
-                },
-                }
-              }}
-              />
-              
-              {errors.embarkation && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                marginBottom: 2,
-                fontFamily: "'Kdam Thmor Pro', sans-serif" 
-                }}
-              >
-                Error loading embarkation data: {errors.embarkation}
-              </Alert>
-              )}
-              
-              <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ 
-                    fontWeight: 'bold', 
-                    color: '#457884',
-                    fontFamily: "'Kdam Thmor Pro', sans-serif"
-                    }}>
-                    Disembarkation Port
-                    </TableCell>
-                    <TableCell sx={{ 
-                    fontWeight: 'bold', 
-                    color: '#457884',
-                    fontFamily: "'Kdam Thmor Pro', sans-serif"
-                    }}>
-                    Quantity
-                    </TableCell>
-                  </TableRow>
-                  </TableHead>
-                  <TableBody>
-                  {filteredEmbarkationData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((item) => (
-                    <TableRow 
-                      key={item.disembarkationPort}
-                      hover
-                    >
-                      <TableCell sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
-                      {item.disembarkationPort}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
-                      {item.count}
-                      </TableCell>
-                    </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <TablePagination
-                  rowsPerPageOptions={[5, 10, 15]}
-                  component="div"
-                  count={filteredEmbarkationData.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={(e, newPage) => setPage(newPage)}
-                  onRowsPerPageChange={(e) => setRowsPerPage(+e.target.value)}
-                  sx={{
-                  '& .MuiTablePagination-toolbar': {
-                    color: '#457884',
-                    fontFamily: "'Kdam Thmor Pro', sans-serif"
-                  }
-                  }}
-                />
-                </TableContainer>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Box sx={{ width: '100%', height: 400 }}>
-                <ResponsiveContainer>
-                  <BarChart data={filteredEmbarkationData}>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="#e0e0e0" 
-                  />
-                  <XAxis 
-                    dataKey="disembarkationPort" 
-                    tick={{ 
-                    fontSize: 10,
-                    fontFamily: "'Kdam Thmor Pro', sans-serif"
-                    }} 
-                    angle={-45} 
-                    textAnchor="end" 
-                    stroke="#457884"
-                  />
-                  <YAxis 
-                    stroke="#457884" 
-                    label={{ 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    fontFamily: "'Kdam Thmor Pro', sans-serif"
-                    }} 
-                  />
-                  <Tooltip 
-                    content={<CustomTooltip />}
-                    cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }} 
-                  />
-                  <Bar 
-                    dataKey="count" 
-                    fill="#1976d2" 
-                    barSize={30} 
-                  />
-                  </BarChart>
-                </ResponsiveContainer>
-                </Box>
-              </Grid>
-              </Grid>
-            </CardContent>
-            </Card>
-            }}*/}
       <Card 
         elevation={3} 
         sx={{ 
@@ -1255,7 +929,6 @@ const getTopDisembarkationPorts = useCallback(() => {
           </TableContainer>
         </CardContent>
       </Card>
-
       {/* Provenance Section */}
       <Card 
         elevation={3} 
@@ -1354,7 +1027,6 @@ const getTopDisembarkationPorts = useCallback(() => {
           }}
         />
   <CardContent>
-    
     <ResponsiveContainer width="100%" height={400}>
       <BarChart
         layout="vertical"
@@ -1406,8 +1078,6 @@ const getTopDisembarkationPorts = useCallback(() => {
     </ResponsiveContainer>
   </CardContent>
 </Card>
-
     </Box>
-
   );
 }
