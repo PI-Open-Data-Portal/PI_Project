@@ -20,14 +20,6 @@ const ProductPieChart = ({ data, colors }) => {
           outerRadius={150}
           fill="#8884d8"
           dataKey="count"
-          label={({ name, percent }) => {
-            // Only show label if percentage is significant enough
-            if (percent < 0.03) return null;
-            const displayName = name.length > 15 
-              ? name.substring(0, 15) + '...' 
-              : name;
-            return `${displayName} (${(percent * 100).toFixed(0)}%)`;
-          }}
         >
           {data.map((entry, index) => (
             <Cell 

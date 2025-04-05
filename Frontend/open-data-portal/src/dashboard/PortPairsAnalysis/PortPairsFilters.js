@@ -98,15 +98,42 @@ export default function PortPairsFilters({ allPorts, onApplyFilters }) {
         </Grid>
         
         <Grid item xs={12} md={6}>
-          <TextField
-            label="Message"
-            fullWidth
-            size="small"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-          />
-        </Grid>
+            <FormControl fullWidth size="small">
+              <InputLabel id="message-label" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
+                Message
+              </InputLabel>
+              <Select
+                labelId="message-label"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                label="Message"
+                sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+              >
+                {[
+                  "ARRIVAL_ANNOUNCEMENT",
+                  "ARRIVAL_GUIDE",
+                  "DECONSOLIDATION_GUIDE",
+                  "DEPARTURE_GUIDE",
+                  "DISEMBARKATION_REPORT",
+                  "EMBARKATION_REPORT",
+                  "LOAD_INSTRUCTION",
+                  "LOAD_REPORT",
+                  "UNLOAD_INSTRUCTION",
+                  "UNLOAD_REPORT",
+                  "VERIFIED_WEIGHING"
+                ].map((msg) => (
+                  <MenuItem 
+                    key={msg} 
+                    value={msg}
+                    sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+                  >
+                    {msg}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
         
         <Grid item xs={12} md={5}>
           <FormControl fullWidth size="small">
