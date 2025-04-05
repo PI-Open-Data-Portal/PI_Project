@@ -3,9 +3,9 @@ import { Box, Button, AppBar, Toolbar, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import MainTable1 from '../components/MainTable1';
 import MainTable2 from '../components/MainTable2';
-import MainTable3 from '../components/MainTable3';
 import MainTable4 from '../components/MainTable4';
 import MainTable5 from '../components/MainTable5';
+import Dataset from "../dashboard/DashboardContainer";
 
 import logo from '../assets/logopng.png';
 
@@ -19,7 +19,7 @@ const Database = () => {
       case 'table2':
         return <MainTable2 />;
       case 'table3':
-        return <MainTable3 />;
+        return <Dataset/>;
       case 'table4':
         return <MainTable4 />;
       case 'table5':
