@@ -11,6 +11,10 @@ import { PortPairsAnalysis } from "./PortPairsAnalysis";
 import ProductAnalysis from "./ProductAnalysis";
 import ProvenanceAnalysis from "./ProvenanceAnalysis";
 import WeightStatistics from "./WeightStatistics";
+import EmbarkationChart from "./EmbarkDesembark/EmbarkationChart";
+import DesembarkationChart from "./EmbarkDesembark/DesembarkationChart";
+import MonthlyProvChart from "./MonthProv/MonthlyProvChart";
+import WeightBoxPlotChart from "./BoxPlot/WeightBoxPlotChart";
 
 export default function DashboardContainer() {
   // State for all data
@@ -180,6 +184,19 @@ export default function DashboardContainer() {
         errors={errors}
         fetchPortPairsData={fetchPortPairsData}
       />
+
+      <EmbarkationChart
+        embarkationData={filteredEmbarkationData}
+        search={search}
+        setSearch={setSearch}
+        errors={errors.embarkation}
+      />
+      <DesembarkationChart
+        embarkationData={filteredEmbarkationData}
+        search={search}
+        setSearch={setSearch}
+        errors={errors.embarkation}
+      />
       
       <ProductAnalysis 
         productData={productData}
@@ -195,6 +212,18 @@ export default function DashboardContainer() {
         weightStatisticsData={weightStatisticsData}
         errors={errors.weightStats}
       />
+
+      <MonthlyProvChart
+        provenanceData={provenanceData}
+        errors={errors.provenance}
+      />
+
+      <WeightBoxPlotChart
+        embarkationData={filteredEmbarkationData}
+        errors={errors.embarkation}
+      />
+
+
     </Box>
   );
 }
