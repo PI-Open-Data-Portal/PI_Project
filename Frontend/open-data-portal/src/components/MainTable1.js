@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -13,17 +13,19 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
-  TextField, 
-  Grid, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
+import DownloadData from './DownloadData';
+import DownloadIcon from '@mui/icons-material/Download';
+import {
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   Checkbox,
   FormControlLabel,
@@ -90,7 +92,7 @@ export default function CaseStudyTable() {
   );
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  
+
   // New state for code details modal
   const [codeDetailsOpen, setCodeDetailsOpen] = useState(false);
   const [selectedCodeDetails, setSelectedCodeDetails] = useState(null);
@@ -99,6 +101,7 @@ export default function CaseStudyTable() {
   // New state for origin modal
   const [originModalOpen, setOriginModalOpen] = useState(false);
   const [selectedOriginItem, setSelectedOriginItem] = useState(null);
+  const [OpenDownloadModal, setOpenDownloadModal] = useState(false);
 
   useEffect(() => {
     fetchCaseStudies();
@@ -126,7 +129,7 @@ export default function CaseStudyTable() {
       }
 
       const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
-      
+
       if (response.data._embedded?.caseStudyList) {
         setCaseStudies(response.data._embedded.caseStudyList);
         // Extract total items from page metadata
@@ -147,6 +150,11 @@ export default function CaseStudyTable() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = () => {
+    // Open the DownloadData modal
+    setOpenDownloadModal(true);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -197,10 +205,10 @@ export default function CaseStudyTable() {
   const handleCodeClick = (row, columnId) => {
     const column = allColumns.find(col => col.id === columnId);
     if (!column || !column.isCode) return;
-    
+
     let details = {};
     let title = '';
-    
+
     // Set data based on code type
     if (column.codeType === '2-digit') {
       // For 2-digit codes: Show only its description
@@ -209,7 +217,7 @@ export default function CaseStudyTable() {
         code: row[columnId],
         description: row[column.hasLabel] || 'No description available'
       };
-    } 
+    }
     else if (column.codeType === '3-digit') {
       // For 3-digit codes: Show its description + 2-digit code and description
       title = `${column.label} Code Details`;
@@ -222,7 +230,7 @@ export default function CaseStudyTable() {
           description: row['nst20072PLabelEN'] || 'No description available'
         }
       };
-    } 
+    }
     else if (column.codeType === '8-digit') {
       // For 8-digit codes: Show its description + 3-digit code/description + 2-digit code/description
       title = `${column.label} Details`;
@@ -243,7 +251,7 @@ export default function CaseStudyTable() {
         ]
       };
     }
-    
+
     setSelectedCodeDetails(details);
     setCodeModalTitle(title);
     setCodeDetailsOpen(true);
@@ -263,19 +271,19 @@ export default function CaseStudyTable() {
 
   const handleColumnSelectionChange = (columnId) => {
     const newSelections = { ...columnSelections };
-    
+
     // If trying to deselect ID column, prevent it
     if (columnId === 'id' && newSelections[columnId]) {
       showAlert('ID column cannot be deselected');
       return;
     }
-    
+
     // If trying to select but already at max columns, prevent it
     if (!newSelections[columnId] && countSelectedColumns(newSelections) >= MAX_COLUMNS) {
       showAlert(`Maximum ${MAX_COLUMNS} columns allowed`);
       return;
     }
-    
+
     // Toggle the selection
     newSelections[columnId] = !newSelections[columnId];
     setColumnSelections(newSelections);
@@ -293,17 +301,17 @@ export default function CaseStudyTable() {
   const handleSaveColumnSelections = () => {
     // Filter allColumns based on selections
     const selectedCount = countSelectedColumns(columnSelections);
-    
+
     if (selectedCount > MAX_COLUMNS) {
       showAlert(`Please select a maximum of ${MAX_COLUMNS} columns`);
       return;
     }
-    
+
     if (selectedCount === 0) {
       showAlert('Please select at least one column');
       return;
     }
-    
+
     const newDisplayColumns = allColumns.filter(col => columnSelections[col.id]);
     setDisplayColumns(newDisplayColumns);
     handleCloseColumnModal();
@@ -327,6 +335,75 @@ export default function CaseStudyTable() {
     setColumnSelections(newSelections);
   };
 
+  const handleDownloadData = (selectedColumnIds, format, setIsDownloading) => {
+    const fetchAndDownloadData = async () => {
+      try {
+        setAlertOpen(true);
+        setAlertMessage('Preparing download...');
+
+        // Build query parameters
+        const params = {
+          page: 0,
+          size: 100000, // Set a high limit or implement pagination
+        };
+
+        // Add current filters if needed
+        if (selectedProv2) params.prov2 = selectedProv2;
+        if (nst20073pSearch) params.nst20073P = nst20073pSearch;
+        if (containerPlateSearch) params.containerPlate = containerPlateSearch;
+
+        // Prepare the columns parameter as a comma-separated string
+        const columnsParam = selectedColumnIds.join(',');
+
+        // Make the API call to download the data
+        const downloadResponse = await axios.get('http://localhost:8080/apiV1/casestudy/download', {
+          params: {
+            columns: columnsParam,
+            format: format
+          },
+          responseType: 'blob' // Ensure the response is treated as a binary file
+        });
+
+        // Determine the file type and extension
+        const type = format === 'json' ? 'application/json' :
+          format === 'csv' ? 'text/csv' :
+            'application/octet-stream';
+        const extension = format === 'json' ? 'json' :
+          format === 'csv' ? 'csv' :
+            'parquet';
+        const filename = `case_studies.${extension}`;
+
+        // Create and trigger download
+        const blob = new Blob([downloadResponse.data], { type: `${type};charset=utf-8;` });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setAlertMessage('Download completed!');
+        setAlertOpen(true);
+      } catch (error) {
+        console.error('Error downloading data:', error);
+        setAlertMessage('Error downloading data. Please try again.');
+        setAlertOpen(true);
+      } finally {
+        // Ensure isDownloading is set to false
+        setIsDownloading(false);
+      }
+    };
+
+    // Execute the function
+    fetchAndDownloadData();
+  };
+
+
+
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
       <Grid container spacing={2} sx={{ marginBottom: 2 }}>
@@ -342,27 +419,27 @@ export default function CaseStudyTable() {
           </FormControl>
         </Grid>
         <Grid item xs={12} md={4}>
-          <TextField 
-            fullWidth 
-            label="Search by Container Plate" 
-            value={containerPlateSearch} 
-            onChange={handleContainerPlateSearchChange} 
+          <TextField
+            fullWidth
+            label="Search by Container Plate"
+            value={containerPlateSearch}
+            onChange={handleContainerPlateSearchChange}
           />
         </Grid>
         <Grid item xs={12} md={4}>
-          <TextField 
-            fullWidth 
-            label="Search by Code" 
-            value={nst20073pSearch} 
-            onChange={handleNst20073pSearchChange} 
+          <TextField
+            fullWidth
+            label="Search by Code"
+            value={nst20073pSearch}
+            onChange={handleNst20073pSearchChange}
           />
         </Grid>
         <Grid item xs={12} md={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <Button 
-            variant="outlined" 
-            startIcon={<SettingsIcon />} 
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
             onClick={handleOpenColumnModal}
-            sx={{ 
+            sx={{
               height: '56px',
               color: '#457985',     // Text color
               borderColor: '#457985', // Border color
@@ -375,16 +452,40 @@ export default function CaseStudyTable() {
             Columns
           </Button>
         </Grid>
+        <Grid item xs={12} md={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
+            sx={{
+              height: '56px',
+              color: '#457985',     // Text color
+              borderColor: '#457985', // Border color
+              '&:hover': {
+                borderColor: '#457985',
+                backgroundColor: 'rgba(69, 121, 133, 0.04)', // Lighter version for hover
+              }
+            }}
+          >
+            Download
+          </Button>
+        </Grid>
       </Grid>
-
+      <DownloadData
+        open={OpenDownloadModal}
+        onClose={() => setOpenDownloadModal(false)}
+        allColumns={allColumns}
+        defaultSelectedColumns={displayColumns.map(col => col.id)}
+        onDownload={handleDownloadData}
+      />
       <TableContainer sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
               {displayColumns.map((column) => (
-                <TableCell 
-                  key={column.id} 
-                  align={column.align} 
+                <TableCell
+                  key={column.id}
+                  align={column.align}
                   style={{ minWidth: column.minWidth }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -419,17 +520,17 @@ export default function CaseStudyTable() {
                   {displayColumns.map((column) => {
                     const isCodeColumn = column.isCode;
                     const isOriginColumn = column.isOrigin;
-                    
+
                     return (
-                      <TableCell 
-                        key={column.id} 
+                      <TableCell
+                        key={column.id}
                         align={column.align}
                       >
                         {isOriginColumn ? (
                           <Button
                             startIcon={<LocationOnIcon />}
                             onClick={() => handleOriginClick(row)}
-                            sx={{ 
+                            sx={{
                               color: '#457985',
                               '&:hover': {
                                 backgroundColor: 'rgba(69, 121, 133, 0.04)',
@@ -438,10 +539,10 @@ export default function CaseStudyTable() {
                           >
                           </Button>
                         ) : isCodeColumn ? (
-                          <Box 
+                          <Box
                             onClick={() => handleCodeClick(row, column.id)}
-                            sx={{ 
-                              display: 'inline-flex', 
+                            sx={{
+                              display: 'inline-flex',
                               alignItems: 'center',
                               cursor: 'pointer',
                               color: '#457985',
@@ -486,8 +587,8 @@ export default function CaseStudyTable() {
       />
 
       {/* Column Selection Modal */}
-      <Dialog 
-        open={openColumnModal} 
+      <Dialog
+        open={openColumnModal}
         onClose={handleCloseColumnModal}
         maxWidth="md"
         fullWidth
@@ -551,10 +652,10 @@ export default function CaseStudyTable() {
       </Dialog>
 
       {/* Code Details Modal */}
-      <Dialog 
-        open={codeDetailsOpen} 
-        onClose={() => setCodeDetailsOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={codeDetailsOpen}
+        onClose={() => setCodeDetailsOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>{codeModalTitle}</DialogTitle>
@@ -568,7 +669,7 @@ export default function CaseStudyTable() {
               <Typography variant="body1" sx={{ mb: 2 }}>
                 {selectedCodeDetails.description}
               </Typography>
-              
+
               {/* Single related code (for 3-digit) */}
               {selectedCodeDetails.relatedCode && (
                 <>
@@ -584,7 +685,7 @@ export default function CaseStudyTable() {
                   </Typography>
                 </>
               )}
-              
+
               {/* Multiple related codes (for 8-digit) */}
               {selectedCodeDetails.relatedCodes && selectedCodeDetails.relatedCodes.map((relatedCode, index) => (
                 <React.Fragment key={index}>
@@ -609,25 +710,25 @@ export default function CaseStudyTable() {
       </Dialog>
 
       {/* New Origin Modal */}
-      <Dialog 
-        open={originModalOpen} 
-        onClose={() => setOriginModalOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={originModalOpen}
+        onClose={() => setOriginModalOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Cargo Origin Information</DialogTitle>
         <DialogContent>
-          
+
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOriginModalOpen(false)} color="primary">Close</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Alert Snackbar */}
-      <Snackbar 
-        open={alertOpen} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={alertOpen}
+        autoHideDuration={6000}
         onClose={handleCloseAlert}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

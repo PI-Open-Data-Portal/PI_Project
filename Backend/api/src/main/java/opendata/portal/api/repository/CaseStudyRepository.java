@@ -1,6 +1,11 @@
 package opendata.portal.api.repository;
 
 import org.springframework.stereotype.Repository;
+
+import jakarta.persistence.PersistenceContext;
+
+import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.A;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,13 +13,17 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import opendata.portal.api.model.CaseStudy;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Repository
-public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> , JpaSpecificationExecutor<CaseStudy> {
+public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer>, JpaSpecificationExecutor<CaseStudy> {
 
         // Find entries where prov2 starts with "ML"
         Page<CaseStudy> findByProv2StartingWith(Pageable pageable, String prefix);
@@ -129,4 +138,6 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer> ,
                         @Param("message") String message,
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
+
+
 }
