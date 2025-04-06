@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +26,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -193,5 +196,70 @@ public class CaseStudyApiController {
         return ResponseEntity.ok(
                 caseStudyService.getPortPairFrequency(startDate, endDate, isTranshipment, message,
                         embarkationLocations, disembarkationLocations));
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<?> downloadCaseStudies(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isTranshipment,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String embarkationLocations,
+            @RequestParam(required = false) String disembarkationLocations,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) List<String> columns,
+            @RequestParam(defaultValue = "json") String format) {
+
+        log.info("Downloading case studies in format: {}", format);
+
+        try {
+            // Validate format parameter
+            String formatLower = format.toLowerCase();
+            if (!formatLower.equals("csv") && !formatLower.equals("json") && !formatLower.equals("parquet")) {
+                return ResponseEntity.badRequest().body("Invalid format. Supported formats: json, csv, parquet");
+            }
+
+            // Get byte data from service
+            byte[] fileContent = caseStudyService.downloadCaseStudies(
+                    startDate, endDate, isTranshipment, message,
+                    embarkationLocations, disembarkationLocations, type,
+                    columns, formatLower);
+
+            // Determine content type and file extension
+            String contentType;
+            String fileExtension;
+
+            switch (formatLower) {
+                case "csv":
+                    contentType = "text/csv";
+                    fileExtension = "csv";
+                    break;
+                case "parquet":
+                    contentType = "application/octet-stream";
+                    fileExtension = "parquet";
+                    break;
+                case "json":
+                default:
+                    contentType = "application/json";
+                    fileExtension = "json";
+                    break;
+            }
+
+            log.info("Successfully prepared {} file with {} bytes", fileExtension, fileContent.length);
+
+            // Return the file as a downloadable response
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=case_studies." + fileExtension)
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(fileContent);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Bad request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error while downloading case studies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error while processing the request: " + e.getMessage());
+        }
     }
 }

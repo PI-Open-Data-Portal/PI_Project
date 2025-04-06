@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -18,18 +18,20 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import ScaleIcon from '@mui/icons-material/Scale';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import DownloadData from './DownloadData';
+import DownloadIcon from '@mui/icons-material/Download';
 import { Chip } from '@mui/material';
-import { 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
-  TextField, 
-  Grid, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
+import {
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   Checkbox,
   FormControlLabel,
@@ -95,14 +97,17 @@ export default function CaseStudyTable() {
   );
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  
+
   // New state for code details modal
   const [codeDetailsOpen, setCodeDetailsOpen] = useState(false);
   const [selectedCodeDetails, setSelectedCodeDetails] = useState(null);
   const [codeModalTitle, setCodeModalTitle] = useState('');
 
-  
 
+  // New state for origin modal
+  const [originModalOpen, setOriginModalOpen] = useState(false);
+  const [selectedOriginItem, setSelectedOriginItem] = useState(null);
+  const [OpenDownloadModal, setOpenDownloadModal] = useState(false);
 
   useEffect(() => {
     fetchCaseStudies();
@@ -130,7 +135,7 @@ export default function CaseStudyTable() {
       }
 
       const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
-      
+
       if (response.data._embedded?.caseStudyList) {
         setCaseStudies(response.data._embedded.caseStudyList);
         // Extract total items from page metadata
@@ -151,6 +156,11 @@ export default function CaseStudyTable() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = () => {
+    // Open the DownloadData modal
+    setOpenDownloadModal(true);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -196,10 +206,10 @@ export default function CaseStudyTable() {
   const handleCodeClick = (row, columnId) => {
     const column = allColumns.find(col => col.id === columnId);
     if (!column || !column.isCode) return;
-    
+
     let details = {};
     let title = '';
-    
+
     // Set data based on code type
     if (column.codeType === '2-digit') {
       // For 2-digit codes: Show only its description
@@ -208,7 +218,7 @@ export default function CaseStudyTable() {
         code: row[columnId],
         description: row[column.hasLabel] || 'No description available'
       };
-    } 
+    }
     else if (column.codeType === '3-digit') {
       // For 3-digit codes: Show its description + 2-digit code and description
       title = `${column.label} Code Details`;
@@ -221,7 +231,7 @@ export default function CaseStudyTable() {
           description: row['nst20072PLabelEN'] || 'No description available'
         }
       };
-    } 
+    }
     else if (column.codeType === '8-digit') {
       // For 8-digit codes: Show its description + 3-digit code/description + 2-digit code/description
       title = `${column.label} Details`;
@@ -242,7 +252,7 @@ export default function CaseStudyTable() {
         ]
       };
     }
-    
+
     setSelectedCodeDetails(details);
     setCodeModalTitle(title);
     setCodeDetailsOpen(true);
@@ -262,19 +272,19 @@ export default function CaseStudyTable() {
 
   const handleColumnSelectionChange = (columnId) => {
     const newSelections = { ...columnSelections };
-    
+
     // If trying to deselect ID column, prevent it
     if (columnId === 'id' && newSelections[columnId]) {
       showAlert('ID column cannot be deselected');
       return;
     }
-    
+
     // If trying to select but already at max columns, prevent it
     if (!newSelections[columnId] && countSelectedColumns(newSelections) >= MAX_COLUMNS) {
       showAlert(`Maximum ${MAX_COLUMNS} columns allowed`);
       return;
     }
-    
+
     // Toggle the selection
     newSelections[columnId] = !newSelections[columnId];
     setColumnSelections(newSelections);
@@ -292,17 +302,17 @@ export default function CaseStudyTable() {
   const handleSaveColumnSelections = () => {
     // Filter allColumns based on selections
     const selectedCount = countSelectedColumns(columnSelections);
-    
+
     if (selectedCount > MAX_COLUMNS) {
       showAlert(`Please select a maximum of ${MAX_COLUMNS} columns`);
       return;
     }
-    
+
     if (selectedCount === 0) {
       showAlert('Please select at least one column');
       return;
     }
-    
+
     const newDisplayColumns = allColumns.filter(col => columnSelections[col.id]);
     setDisplayColumns(newDisplayColumns);
     handleCloseColumnModal();
@@ -326,6 +336,75 @@ export default function CaseStudyTable() {
     setColumnSelections(newSelections);
   };
 
+  const handleDownloadData = (selectedColumnIds, format, setIsDownloading) => {
+    const fetchAndDownloadData = async () => {
+      try {
+        setAlertOpen(true);
+        setAlertMessage('Preparing download...');
+
+        // Build query parameters
+        const params = {
+          page: 0,
+          size: 100000, // Set a high limit or implement pagination
+        };
+
+        // Add current filters if needed
+        if (selectedProv2) params.prov2 = selectedProv2;
+        if (nst20073pSearch) params.nst20073P = nst20073pSearch;
+        if (containerPlateSearch) params.containerPlate = containerPlateSearch;
+
+        // Prepare the columns parameter as a comma-separated string
+        const columnsParam = selectedColumnIds.join(',');
+
+        // Make the API call to download the data
+        const downloadResponse = await axios.get('http://localhost:8080/apiV1/casestudy/download', {
+          params: {
+            columns: columnsParam,
+            format: format
+          },
+          responseType: 'blob' // Ensure the response is treated as a binary file
+        });
+
+        // Determine the file type and extension
+        const type = format === 'json' ? 'application/json' :
+          format === 'csv' ? 'text/csv' :
+            'application/octet-stream';
+        const extension = format === 'json' ? 'json' :
+          format === 'csv' ? 'csv' :
+            'parquet';
+        const filename = `case_studies.${extension}`;
+
+        // Create and trigger download
+        const blob = new Blob([downloadResponse.data], { type: `${type};charset=utf-8;` });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setAlertMessage('Download completed!');
+        setAlertOpen(true);
+      } catch (error) {
+        console.error('Error downloading data:', error);
+        setAlertMessage('Error downloading data. Please try again.');
+        setAlertOpen(true);
+      } finally {
+        // Ensure isDownloading is set to false
+        setIsDownloading(false);
+      }
+    };
+
+    // Execute the function
+    fetchAndDownloadData();
+  };
+
+
+
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
       <Grid container spacing={2} sx={{ marginBottom: 2 }}>
@@ -341,27 +420,27 @@ export default function CaseStudyTable() {
           </FormControl>
         </Grid>
         <Grid item xs={12} md={4}>
-          <TextField 
-            fullWidth 
-            label="Search by Container Plate" 
-            value={containerPlateSearch} 
-            onChange={handleContainerPlateSearchChange} 
+          <TextField
+            fullWidth
+            label="Search by Container Plate"
+            value={containerPlateSearch}
+            onChange={handleContainerPlateSearchChange}
           />
         </Grid>
         <Grid item xs={12} md={4}>
-          <TextField 
-            fullWidth 
-            label="Search by Code" 
-            value={nst20073pSearch} 
-            onChange={handleNst20073pSearchChange} 
+          <TextField
+            fullWidth
+            label="Search by Code"
+            value={nst20073pSearch}
+            onChange={handleNst20073pSearchChange}
           />
         </Grid>
         <Grid item xs={12} md={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <Button 
-            variant="outlined" 
-            startIcon={<SettingsIcon />} 
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
             onClick={handleOpenColumnModal}
-            sx={{ 
+            sx={{
               height: '56px',
               color: '#457985',     // Text color
               borderColor: '#457985', // Border color
@@ -374,16 +453,40 @@ export default function CaseStudyTable() {
             Columns
           </Button>
         </Grid>
+        <Grid item xs={12} md={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
+            sx={{
+              height: '56px',
+              color: '#457985',     // Text color
+              borderColor: '#457985', // Border color
+              '&:hover': {
+                borderColor: '#457985',
+                backgroundColor: 'rgba(69, 121, 133, 0.04)', // Lighter version for hover
+              }
+            }}
+          >
+            Download
+          </Button>
+        </Grid>
       </Grid>
-
+      <DownloadData
+        open={OpenDownloadModal}
+        onClose={() => setOpenDownloadModal(false)}
+        allColumns={allColumns}
+        defaultSelectedColumns={displayColumns.map(col => col.id)}
+        onDownload={handleDownloadData}
+      />
       <TableContainer sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
               {displayColumns.map((column) => (
-                <TableCell 
-                  key={column.id} 
-                  align={column.align} 
+                <TableCell
+                  key={column.id}
+                  align={column.align}
                   style={{ minWidth: column.minWidth }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -417,17 +520,17 @@ export default function CaseStudyTable() {
                 <TableRow hover key={row.id}>
                   {displayColumns.map((column) => {
                     const isCodeColumn = column.isCode;
-                    
+
                     return (
-                      <TableCell 
-                        key={column.id} 
+                      <TableCell
+                        key={column.id}
                         align={column.align}
                       >
                         {isCodeColumn ? (
-                          <Box 
+                          <Box
                             onClick={() => handleCodeClick(row, column.id)}
-                            sx={{ 
-                              display: 'inline-flex', 
+                            sx={{
+                              display: 'inline-flex',
                               alignItems: 'center',
                               cursor: 'pointer',
                               color: '#457985',
@@ -452,8 +555,8 @@ export default function CaseStudyTable() {
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Tooltip title="View details">
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => fetchCaseStudyDetails(row.id)}
                           sx={{ color: '#457985' }}
                         >
@@ -461,9 +564,9 @@ export default function CaseStudyTable() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Prov graph">
-                        <IconButton 
+                        <IconButton
                           href='/provGraph'
-                          size="small" 
+                          size="small"
                           sx={{ color: '#457985' }}
                         >
                           <LocationOnIcon />
@@ -489,8 +592,8 @@ export default function CaseStudyTable() {
       />
 
       {/* Column Selection Modal */}
-      <Dialog 
-        open={openColumnModal} 
+      <Dialog
+        open={openColumnModal}
         onClose={handleCloseColumnModal}
         maxWidth="md"
         fullWidth
@@ -542,223 +645,223 @@ export default function CaseStudyTable() {
         </DialogActions>
       </Dialog>
 
-{/* Case Study Details Modal */}
-<Dialog 
-  open={openModal} 
-  onClose={() => setOpenModal(false)} 
-  maxWidth="md" 
-  fullWidth
-  PaperProps={{
-    elevation: 3,
-    sx: { borderRadius: 2 }
-  }}
->
-  <DialogTitle sx={{ bgcolor: '#457985', color: 'white', display: 'flex', alignItems: 'center' }}>
-    <LocalShippingIcon sx={{ mr: 1 }} />
-    <Typography variant="h6">
-      Cargo Container Details - {selectedCaseStudy?.containerPlate || 'Loading...'}
-    </Typography>
-  </DialogTitle>
-  
-  <DialogContent dividers>
-    {!selectedCaseStudy ? (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <Typography>Loading case study details...</Typography>
-      </Box>
-    ) : (
-      <Grid container spacing={3}>
-        {/* Container Information Section */}
-        <Grid item xs={12}>
-          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
-              <InventoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Container Information
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Container ID</Typography>
-                <Typography variant="body1">{selectedCaseStudy.id || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Container Plate</Typography>
-                <Typography variant="body1">{selectedCaseStudy.containerPlate || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">State</Typography>
-                <Chip 
-                  label={selectedCaseStudy.containerState || 'Unknown'} 
-                  color={selectedCaseStudy.containerState === "Active" ? "success" : "default"}
-                  size="small"
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">ISO Container</Typography>
-                <Typography variant="body1">{selectedCaseStudy.isoContentainer || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">ISO Registry</Typography>
-                <Typography variant="body1">{selectedCaseStudy.isoContentainerRegistry || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Container Tare</Typography>
-                <Typography variant="body1">{selectedCaseStudy.containerTare || 'N/A'}</Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-        
-        {/* Cargo Information Section */}
-        <Grid item xs={12}>
-          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
-              <ScaleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Cargo Information
-            </Typography>
-            
-            <Grid container spacing={2}>
+      {/* Case Study Details Modal */}
+      <Dialog
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          elevation: 3,
+          sx: { borderRadius: 2 }
+        }}
+      >
+        <DialogTitle sx={{ bgcolor: '#457985', color: 'white', display: 'flex', alignItems: 'center' }}>
+          <LocalShippingIcon sx={{ mr: 1 }} />
+          <Typography variant="h6">
+            Cargo Container Details - {selectedCaseStudy?.containerPlate || 'Loading...'}
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          {!selectedCaseStudy ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography>Loading case study details...</Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {/* Container Information Section */}
               <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">Cargo Description</Typography>
-                <Typography variant="body1">{selectedCaseStudy.cargoDescription || 'N/A'}</Typography>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+                    <InventoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Container Information
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Container ID</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.id || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Container Plate</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.containerPlate || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">State</Typography>
+                      <Chip
+                        label={selectedCaseStudy.containerState || 'Unknown'}
+                        color={selectedCaseStudy.containerState === "Active" ? "success" : "default"}
+                        size="small"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">ISO Container</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.isoContentainer || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">ISO Registry</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.isoContentainerRegistry || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Container Tare</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.containerTare || 'N/A'}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Weight (kg)</Typography>
-                <Typography variant="body1" fontWeight="medium">
-                  {selectedCaseStudy.weight?.toLocaleString() || 'N/A'}
-                </Typography>
+
+              {/* Cargo Information Section */}
+              <Grid item xs={12}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+                    <ScaleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Cargo Information
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="text.secondary">Cargo Description</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.cargoDescription || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Weight (kg)</Typography>
+                      <Typography variant="body1" fontWeight="medium">
+                        {selectedCaseStudy.weight?.toLocaleString() || 'N/A'}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Departure Weight</Typography>
+                      <Typography variant="body1">
+                        {selectedCaseStudy.departureWeight?.toLocaleString() || 'N/A'}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Packages Quantity</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.packagesQuantity || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Broken Packages</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.brokenPackagesQuantity || '0'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Harmonized Code</Typography>
+                      <Typography variant="body1" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                        {selectedCaseStudy.harmonizedCode || 'N/A'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Departure Weight</Typography>
-                <Typography variant="body1">
-                  {selectedCaseStudy.departureWeight?.toLocaleString() || 'N/A'}
-                </Typography>
+
+              {/* Shipping Information Section */}
+              <Grid item xs={12}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+                    <LocationOnIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Shipping Information
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Movement Date</Typography>
+                      <Typography variant="body1">
+                        <CalendarTodayIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                        {selectedCaseStudy.movementDate || 'N/A'}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Embarkation Port</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.embarkationPort || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Disembarkation Port</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.disembarkationPort || 'N/A'}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Transhipment</Typography>
+                      <Typography variant="body1">{selectedCaseStudy.transhipment || 'N/A'}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Packages Quantity</Typography>
-                <Typography variant="body1">{selectedCaseStudy.packagesQuantity || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Broken Packages</Typography>
-                <Typography variant="body1">{selectedCaseStudy.brokenPackagesQuantity || '0'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Harmonized Code</Typography>
-                <Typography variant="body1" color="#457985" sx={{ fontFamily: 'monospace' }}>
-                  {selectedCaseStudy.harmonizedCode || 'N/A'}
-                </Typography>
+
+              {/* Classification Codes Section */}
+              <Grid item xs={12}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+                    Classification Codes
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white', height: '100%' }}>
+                        <Typography variant="subtitle2" color="text.secondary">NST 2P</Typography>
+                        <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                          {selectedCaseStudy.nst20072P || 'N/A'}
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedCaseStudy.nst20072PLabelEN || 'No description'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
+                        <Typography variant="subtitle2" color="text.secondary">NST 3P</Typography>
+                        <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                          {selectedCaseStudy.nst20073P || 'N/A'}
+                        </Typography>
+                        <Typography variant="body2" noWrap>
+                          {selectedCaseStudy.nst20073PLabelEN || 'No description'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
+                        <Typography variant="subtitle2" color="text.secondary">Data Prov</Typography>
+                        <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                          {selectedCaseStudy.prov2 || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
             </Grid>
-          </Paper>
-        </Grid>
-        
-        {/* Shipping Information Section */}
-        <Grid item xs={12}>
-          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
-              <LocationOnIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Shipping Information
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Movement Date</Typography>
-                <Typography variant="body1">
-                  <CalendarTodayIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                  {selectedCaseStudy.movementDate || 'N/A'}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Embarkation Port</Typography>
-                <Typography variant="body1">{selectedCaseStudy.embarkationPort || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Disembarkation Port</Typography>
-                <Typography variant="body1">{selectedCaseStudy.disembarkationPort || 'N/A'}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2" color="text.secondary">Transhipment</Typography>
-                <Typography variant="body1">{selectedCaseStudy.transhipment || 'N/A'}</Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-        
-        {/* Classification Codes Section */}
-        <Grid item xs={12}>
-          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
-              Classification Codes
-            </Typography>
-            
-            <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
-  <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white', height: '100%' }}>
-    <Typography variant="subtitle2" color="text.secondary">NST 2P</Typography>
-    <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
-      {selectedCaseStudy.nst20072P || 'N/A'}
-    </Typography>
-    <Typography variant="body2">
-      {selectedCaseStudy.nst20072PLabelEN || 'No description'}
-    </Typography>
-  </Box>
-</Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
-                  <Typography variant="subtitle2" color="text.secondary">NST 3P</Typography>
-                  <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
-                    {selectedCaseStudy.nst20073P || 'N/A'}
-                  </Typography>
-                  <Typography variant="body2" noWrap>
-                    {selectedCaseStudy.nst20073PLabelEN || 'No description'}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
-                  <Typography variant="subtitle2" color="text.secondary">Data Prov</Typography>
-                  <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
-                    {selectedCaseStudy.prov2 || 'N/A'}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-      </Grid>
-    )}
-  </DialogContent>
-  
-  <DialogActions sx={{ p: 2 }}>
-    <Button 
-      variant="outlined" 
-      color="primary" 
-      onClick={() => setOpenModal(false)}
-    >
-      Close Details
-    </Button>
-  </DialogActions>
-</Dialog>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => setOpenModal(false)}
+          >
+            Close Details
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Code Details Modal */}
-      <Dialog 
-        open={codeDetailsOpen} 
-        onClose={() => setCodeDetailsOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={codeDetailsOpen}
+        onClose={() => setCodeDetailsOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>{codeModalTitle}</DialogTitle>
@@ -772,7 +875,7 @@ export default function CaseStudyTable() {
               <Typography variant="body1" sx={{ mb: 2 }}>
                 {selectedCodeDetails.description}
               </Typography>
-              
+
               {/* Single related code (for 3-digit) */}
               {selectedCodeDetails.relatedCode && (
                 <>
@@ -788,7 +891,7 @@ export default function CaseStudyTable() {
                   </Typography>
                 </>
               )}
-              
+
               {/* Multiple related codes (for 8-digit) */}
               {selectedCodeDetails.relatedCodes && selectedCodeDetails.relatedCodes.map((relatedCode, index) => (
                 <React.Fragment key={index}>
@@ -812,11 +915,11 @@ export default function CaseStudyTable() {
         </DialogActions>
       </Dialog>
 
-      
+
       {/* Alert Snackbar */}
-      <Snackbar 
-        open={alertOpen} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={alertOpen}
+        autoHideDuration={6000}
         onClose={handleCloseAlert}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
