@@ -13,19 +13,25 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import ScaleIcon from '@mui/icons-material/Scale';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import DownloadData from './DownloadData';
 import DownloadIcon from '@mui/icons-material/Download';
-import {
-  Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
+import { Chip } from '@mui/material';
+import { 
+  Button, 
+  FormControl, 
+  InputLabel, 
+  MenuItem, 
+  Select, 
+  TextField, 
+  Grid, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
   DialogActions,
   Checkbox,
   FormControlLabel,
@@ -34,7 +40,8 @@ import {
   Box,
   Alert,
   Snackbar,
-  Tooltip
+  Tooltip,
+  Stack
 } from '@mui/material';
 
 // All available columns/attributes with added descriptions
@@ -58,12 +65,10 @@ const allColumns = [
   { id: 'departureWeight', label: 'Departure Weight', minWidth: 130, description: 'Weight at departure' },
   { id: 'nst20073P', label: 'NST 3P', minWidth: 100, description: '3-digit identifier', isCode: true, codeType: '3-digit', hasLabel: 'nst20073PLabelEN' },
   { id: 'nst20072P', label: 'NST 2P', minWidth: 100, description: '2-digit identifier', isCode: true, codeType: '2-digit', hasLabel: 'nst20072PLabelEN' },
-  { id: 'prov', label: 'Origin', minWidth: 110, description: 'Data origin information', isOrigin: true },
   { id: 'prov2', label: 'Prov2', minWidth: 80, description: 'Data prov information' },
 ];
 
-// Default columns to display (max 7)
-const defaultDisplayColumns = ['id', 'containerPlate', 'cargoDescription', 'nst20073P', 'prov', 'prov2', 'weight'];
+const defaultDisplayColumns = ['id', 'containerPlate', 'cargoDescription', 'nst20073P', 'prov2', 'weight'];
 
 // Maximum number of columns allowed
 const MAX_COLUMNS = 7;
@@ -97,6 +102,7 @@ export default function CaseStudyTable() {
   const [codeDetailsOpen, setCodeDetailsOpen] = useState(false);
   const [selectedCodeDetails, setSelectedCodeDetails] = useState(null);
   const [codeModalTitle, setCodeModalTitle] = useState('');
+
 
   // New state for origin modal
   const [originModalOpen, setOriginModalOpen] = useState(false);
@@ -195,11 +201,6 @@ export default function CaseStudyTable() {
     }
   };
 
-  // Handle origin click to open the origin modal
-  const handleOriginClick = (row) => {
-    setSelectedOriginItem(row);
-    setOriginModalOpen(true);
-  };
 
   // New function to handle code click and show the modal with appropriate details
   const handleCodeClick = (row, columnId) => {
@@ -498,7 +499,7 @@ export default function CaseStudyTable() {
                   </Box>
                 </TableCell>
               ))}
-              <TableCell style={{ minWidth: 50 }}>Actions</TableCell>
+              <TableCell style={{ minWidth: 100 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -519,13 +520,12 @@ export default function CaseStudyTable() {
                 <TableRow hover key={row.id}>
                   {displayColumns.map((column) => {
                     const isCodeColumn = column.isCode;
-                    const isOriginColumn = column.isOrigin;
-
                     return (
                       <TableCell
                         key={column.id}
                         align={column.align}
                       >
+
                         {isOriginColumn ? (
                           <Button
                             startIcon={<LocationOnIcon />}
@@ -540,6 +540,9 @@ export default function CaseStudyTable() {
                           </Button>
                         ) : isCodeColumn ? (
                           <Box
+
+                        {isCodeColumn ? (
+                          <Box 
                             onClick={() => handleCodeClick(row, column.id)}
                             sx={{
                               display: 'inline-flex',
@@ -565,9 +568,26 @@ export default function CaseStudyTable() {
                     );
                   })}
                   <TableCell>
-                    <IconButton color="grey" onClick={() => fetchCaseStudyDetails(row.id)}>
-                      <VisibilityIcon />
-                    </IconButton>
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="View details">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => fetchCaseStudyDetails(row.id)}
+                          sx={{ color: '#457985' }}
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Prov graph">
+                        <IconButton 
+                          href='/provGraph'
+                          size="small" 
+                          sx={{ color: '#457985' }}
+                        >
+                          <LocationOnIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))
@@ -640,16 +660,217 @@ export default function CaseStudyTable() {
         </DialogActions>
       </Dialog>
 
-      {/* Case Study Details Modal */}
-      <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Case Study Details</DialogTitle>
-        <DialogContent>
-          {selectedCaseStudy && <pre>{JSON.stringify(selectedCaseStudy, null, 2)}</pre>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenModal(false)} color="primary">Close</Button>
-        </DialogActions>
-      </Dialog>
+{/* Case Study Details Modal */}
+<Dialog 
+  open={openModal} 
+  onClose={() => setOpenModal(false)} 
+  maxWidth="md" 
+  fullWidth
+  PaperProps={{
+    elevation: 3,
+    sx: { borderRadius: 2 }
+  }}
+>
+  <DialogTitle sx={{ bgcolor: '#457985', color: 'white', display: 'flex', alignItems: 'center' }}>
+    <LocalShippingIcon sx={{ mr: 1 }} />
+    <Typography variant="h6">
+      Cargo Container Details - {selectedCaseStudy?.containerPlate || 'Loading...'}
+    </Typography>
+  </DialogTitle>
+  
+  <DialogContent dividers>
+    {!selectedCaseStudy ? (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <Typography>Loading case study details...</Typography>
+      </Box>
+    ) : (
+      <Grid container spacing={3}>
+        {/* Container Information Section */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+              <InventoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Container Information
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Container ID</Typography>
+                <Typography variant="body1">{selectedCaseStudy.id || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Container Plate</Typography>
+                <Typography variant="body1">{selectedCaseStudy.containerPlate || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">State</Typography>
+                <Chip 
+                  label={selectedCaseStudy.containerState || 'Unknown'} 
+                  color={selectedCaseStudy.containerState === "Active" ? "success" : "default"}
+                  size="small"
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">ISO Container</Typography>
+                <Typography variant="body1">{selectedCaseStudy.isoContentainer || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">ISO Registry</Typography>
+                <Typography variant="body1">{selectedCaseStudy.isoContentainerRegistry || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Container Tare</Typography>
+                <Typography variant="body1">{selectedCaseStudy.containerTare || 'N/A'}</Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+        
+        {/* Cargo Information Section */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+              <ScaleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Cargo Information
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">Cargo Description</Typography>
+                <Typography variant="body1">{selectedCaseStudy.cargoDescription || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Weight (kg)</Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {selectedCaseStudy.weight?.toLocaleString() || 'N/A'}
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Departure Weight</Typography>
+                <Typography variant="body1">
+                  {selectedCaseStudy.departureWeight?.toLocaleString() || 'N/A'}
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Packages Quantity</Typography>
+                <Typography variant="body1">{selectedCaseStudy.packagesQuantity || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Broken Packages</Typography>
+                <Typography variant="body1">{selectedCaseStudy.brokenPackagesQuantity || '0'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Harmonized Code</Typography>
+                <Typography variant="body1" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                  {selectedCaseStudy.harmonizedCode || 'N/A'}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+        
+        {/* Shipping Information Section */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+              <LocationOnIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Shipping Information
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Movement Date</Typography>
+                <Typography variant="body1">
+                  <CalendarTodayIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                  {selectedCaseStudy.movementDate || 'N/A'}
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Embarkation Port</Typography>
+                <Typography variant="body1">{selectedCaseStudy.embarkationPort || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Disembarkation Port</Typography>
+                <Typography variant="body1">{selectedCaseStudy.disembarkationPort || 'N/A'}</Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">Transhipment</Typography>
+                <Typography variant="body1">{selectedCaseStudy.transhipment || 'N/A'}</Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+        
+        {/* Classification Codes Section */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: '#457985', fontWeight: 'bold' }}>
+              Classification Codes
+            </Typography>
+            
+            <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={4}>
+  <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white', height: '100%' }}>
+    <Typography variant="subtitle2" color="text.secondary">NST 2P</Typography>
+    <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+      {selectedCaseStudy.nst20072P || 'N/A'}
+    </Typography>
+    <Typography variant="body2">
+      {selectedCaseStudy.nst20072PLabelEN || 'No description'}
+    </Typography>
+  </Box>
+</Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
+                  <Typography variant="subtitle2" color="text.secondary">NST 3P</Typography>
+                  <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                    {selectedCaseStudy.nst20073P || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" noWrap>
+                    {selectedCaseStudy.nst20073PLabelEN || 'No description'}
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ border: '1px solid #ddd', p: 1.5, borderRadius: 1, bgcolor: 'white' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Data Prov</Typography>
+                  <Typography variant="h6" color="#457985" sx={{ fontFamily: 'monospace' }}>
+                    {selectedCaseStudy.prov2 || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      </Grid>
+    )}
+  </DialogContent>
+  
+  <DialogActions sx={{ p: 2 }}>
+    <Button 
+      variant="outlined" 
+      color="primary" 
+      onClick={() => setOpenModal(false)}
+    >
+      Close Details
+    </Button>
+  </DialogActions>
+</Dialog>
 
       {/* Code Details Modal */}
       <Dialog
@@ -706,22 +927,6 @@ export default function CaseStudyTable() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCodeDetailsOpen(false)} color="primary">Close</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* New Origin Modal */}
-      <Dialog
-        open={originModalOpen}
-        onClose={() => setOriginModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Cargo Origin Information</DialogTitle>
-        <DialogContent>
-
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOriginModalOpen(false)} color="primary">Close</Button>
         </DialogActions>
       </Dialog>
 
