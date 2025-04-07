@@ -20,10 +20,6 @@ const Database = () => {
         return <MainTable2 />;
       case 'table3':
         return <Dataset/>;
-      case 'table4':
-        return <MainTable4 />;
-      case 'table5':
-        return <MainTable5 />;
       default:
         return <MainTable1 />;
     }
@@ -37,7 +33,7 @@ const Database = () => {
             <img src={logo} alt="Logo" width={100} height={100} />
           </Link>
           <Typography variant="h4" sx={{ marginLeft: 1, fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
-            Porto de Aveiro
+            Example Port
           </Typography>
         </Toolbar>
       </AppBar>
@@ -71,32 +67,15 @@ const Database = () => {
               },
             }}
           >
-            Ship Details
+            Container Details
           </Button>
-          
-          <Button
-            variant="contained"
-            onClick={() => setSelectedTable('table2')}
-            sx={{
-              width: '100%',
-              marginBottom: 1,
-              borderRadius: 2,
-              backgroundColor: selectedTable === 'table2' ? '#3a6d6d' : '#457884',
-              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#3a6d6d',
-                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
-              },
-            }}
-          >
-            container Details
-          </Button>
-          
+
           <Button
             variant="contained"
             onClick={() => setSelectedTable('table3')}
             sx={{
               width: '100%',
+              marginTop: 1,
               marginBottom: 1,
               borderRadius: 2,
               backgroundColor: selectedTable === 'table3' ? '#3a6d6d' : '#457884',
@@ -107,17 +86,18 @@ const Database = () => {
               },
             }}
           >
-            Provenance Statistics
+            Logistics Data Dashboard
           </Button>
-
+          
           <Button
             variant="contained"
-            onClick={() => setSelectedTable('table4')}
+            onClick={() => setSelectedTable('table2')}
             sx={{
               width: '100%',
+              marginTop: 1,
               marginBottom: 1,
               borderRadius: 2,
-              backgroundColor: selectedTable === 'table4' ? '#3a6d6d' : '#457884',
+              backgroundColor: selectedTable === 'table2' ? '#3a6d6d' : '#457884',
               boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
               '&:hover': {
                 backgroundColor: '#3a6d6d',
@@ -125,26 +105,9 @@ const Database = () => {
               },
             }}
           >
-            Embarcation Ports
+            Codes Information
           </Button>
-
-          <Button
-            variant="contained"
-            onClick={() => setSelectedTable('table5')}
-            sx={{
-              width: '100%',
-              marginBottom: 1,
-              borderRadius: 2,
-              backgroundColor: selectedTable === 'table5' ? '#3a6d6d' : '#457884',
-              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#3a6d6d',
-                boxShadow: '0px 6px 8px rgba(0, 0, 0, 0.3)',
-              },
-            }}
-          >
-            Product Categories
-          </Button>
+        
 
         </Box>
 
