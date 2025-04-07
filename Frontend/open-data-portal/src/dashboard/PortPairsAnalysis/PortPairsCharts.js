@@ -11,8 +11,9 @@ import {
   Cell
 } from "recharts";
 import { Grid, Typography, Paper } from "@mui/material";
+import LoadingSpinner from "../common/LoadingSpinner";
 
-export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkationPorts, COLORS }) {
+export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkationPorts, COLORS, isLoading = false }) {
   // Custom tooltip for Bar charts
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -40,6 +41,15 @@ export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkation
     return null;
   };
 
+  // If data is loading, display the loading spinner
+  if (isLoading) {
+    return <LoadingSpinner message="Loading port data..." />;
+  }
+
+  // Check if data is available
+  const hasEmbarkationData = topEmbarkationPorts && topEmbarkationPorts.length > 0;
+  const hasDisembarkationData = topDisembarkationPorts && topDisembarkationPorts.length > 0;
+
   return (
     <Grid container spacing={3}>
       {/* Embarkation Ports Chart */}
@@ -52,38 +62,42 @@ export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkation
             fontFamily: "'Kdam Thmor Pro', sans-serif"
           }}
         >
-          Embarkation Ports
+          Top Embarkation Ports
         </Typography>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart
-            data={topEmbarkationPorts}
-            margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name" 
-              angle={-45} 
-              textAnchor="end" 
-              height={70}
-              tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
-            />
-            <YAxis 
-              tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
-              label={{ 
-                value: 'Quantity', 
-                angle: -90, 
-                position: 'insideLeft',
-                fontFamily: "'Kdam Thmor Pro', sans-serif"
-              }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="value" fill="#457884">
-              {topEmbarkationPorts.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {hasEmbarkationData ? (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={topEmbarkationPorts}
+              margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                height={70}
+                tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
+              />
+              <YAxis 
+                tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
+                label={{ 
+                  value: 'Quantity', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  fontFamily: "'Kdam Thmor Pro', sans-serif"
+                }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" fill="#457884">
+                {topEmbarkationPorts.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <LoadingSpinner/>
+        )}
       </Grid>
       
       {/* Disembarkation Ports Chart */}
@@ -96,38 +110,42 @@ export default function PortPairsCharts({ topEmbarkationPorts, topDisembarkation
             fontFamily: "'Kdam Thmor Pro', sans-serif"
           }}
         >
-          Disembarkation Ports
+          Top Disembarkation Ports
         </Typography>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart
-            data={topDisembarkationPorts}
-            margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name" 
-              angle={-45} 
-              textAnchor="end" 
-              height={70}
-              tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
-            />
-            <YAxis 
-              tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
-              label={{ 
-                value: 'Quantity', 
-                angle: -90, 
-                position: 'insideLeft',
-                fontFamily: "'Kdam Thmor Pro', sans-serif"
-              }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="value" fill="#457884">
-              {topDisembarkationPorts.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {hasDisembarkationData ? (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={topDisembarkationPorts}
+              margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                height={70}
+                tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
+              />
+              <YAxis 
+                tick={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontSize: 12 }}
+                label={{ 
+                  value: 'Quantity', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  fontFamily: "'Kdam Thmor Pro', sans-serif"
+                }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" fill="#457884">
+                {topDisembarkationPorts.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <LoadingSpinner />
+        )}
       </Grid>
     </Grid>
   );
