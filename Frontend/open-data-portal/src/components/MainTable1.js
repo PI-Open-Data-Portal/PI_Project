@@ -103,6 +103,8 @@ export default function CaseStudyTable() {
   const [selectedCodeDetails, setSelectedCodeDetails] = useState(null);
   const [codeModalTitle, setCodeModalTitle] = useState('');
 
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // New state for origin modal
   const [originModalOpen, setOriginModalOpen] = useState(false);
@@ -111,7 +113,7 @@ export default function CaseStudyTable() {
 
   useEffect(() => {
     fetchCaseStudies();
-  }, [page, rowsPerPage, selectedProv2, nst20073pSearch, containerPlateSearch]);
+  }, [page, rowsPerPage, selectedProv2, nst20073pSearch, containerPlateSearch, startDate, endDate]);
 
   const fetchCaseStudies = async () => {
     setLoading(true);
@@ -132,6 +134,12 @@ export default function CaseStudyTable() {
       }
       if (containerPlateSearch) {
         params.containerPlate = containerPlateSearch;
+      }
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
       }
 
       const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
@@ -178,6 +186,15 @@ export default function CaseStudyTable() {
 
   const handleProv2Change = (e) => {
     setSelectedProv2(e.target.value);
+    handleFilterChange();
+  };
+  const handleStartDateChange = (e) => {
+    setStartDate(e.target.value);
+    handleFilterChange();
+  };
+  
+  const handleEndDateChange = (e) => {
+    setEndDate(e.target.value);
     handleFilterChange();
   };
 
@@ -408,33 +425,67 @@ export default function CaseStudyTable() {
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
       <Grid container spacing={2} sx={{ marginBottom: 2 }}>
-        <Grid item xs={12} md={3}>
-          <FormControl fullWidth variant="outlined">
-            <InputLabel>Filter by Prov2</InputLabel>
-            <Select value={selectedProv2} onChange={handleProv2Change}>
-              <MenuItem value="">All</MenuItem>
-              {prov2Options.map((prov) => (
-                <MenuItem key={prov} value={prov}>{prov}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            label="Search by Container Plate"
-            value={containerPlateSearch}
-            onChange={handleContainerPlateSearchChange}
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            label="Search by Code"
-            value={nst20073pSearch}
-            onChange={handleNst20073pSearchChange}
-          />
-        </Grid>
+      <Grid container spacing={2} sx={{ marginBottom: 2 }}>
+  {/* First row - Icon buttons on the right */}
+  <Grid container item xs={12} justifyContent="flex-end" spacing={1} sx={{ mb: 1 }}>
+    
+  </Grid>
+
+  {/* Second row - All filters in one row */}
+  <Grid item xs={12} md={2}>
+    <FormControl fullWidth variant="outlined">
+      <InputLabel>Filter by Prov2</InputLabel>
+      <Select value={selectedProv2} onChange={handleProv2Change}>
+        <MenuItem value="">All</MenuItem>
+        {prov2Options.map((prov) => (
+          <MenuItem key={prov} value={prov}>{prov}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+  <Grid item xs={12} md={2.5}>
+    <TextField
+      fullWidth
+      label="Search by Container Plate"
+      value={containerPlateSearch}
+      onChange={handleContainerPlateSearchChange}
+    />
+  </Grid>
+  <Grid item xs={12} md={2.5}>
+    <TextField
+      fullWidth
+      label="Search by Code"
+      value={nst20073pSearch}
+      onChange={handleNst20073pSearchChange}
+    />
+  </Grid>
+  <Grid item xs={12} md={2.5}>
+    <TextField
+      fullWidth
+      label="Start Date"
+      type="date"
+      value={startDate}
+      onChange={handleStartDateChange}
+      InputLabelProps={{
+        shrink: true,
+      }}
+      placeholder="mm/dd/yyyy"
+    />
+  </Grid>
+  <Grid item xs={12} md={2.5}>
+    <TextField
+      fullWidth
+      label="End Date"
+      type="date"
+      value={endDate}
+      onChange={handleEndDateChange}
+      InputLabelProps={{
+        shrink: true,
+      }}
+      placeholder="mm/dd/yyyy"
+    />
+  </Grid>
+</Grid>
         <Grid item xs={12} md={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <Button
             variant="outlined"
