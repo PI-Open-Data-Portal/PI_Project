@@ -66,6 +66,7 @@ const allColumns = [
   { id: 'nst20073P', label: 'NST 3P', minWidth: 100, description: '3-digit identifier', isCode: true, codeType: '3-digit', hasLabel: 'nst20073PLabelEN' },
   { id: 'nst20072P', label: 'NST 2P', minWidth: 100, description: '2-digit identifier', isCode: true, codeType: '2-digit', hasLabel: 'nst20072PLabelEN' },
   { id: 'prov2', label: 'Prov2', minWidth: 80, description: 'Data prov information' },
+  { id: 'prov', label: 'Prov', minWidth: 80, description: 'Data prov information' }
 ];
 
 const defaultDisplayColumns = ['id', 'containerPlate', 'cargoDescription', 'nst20073P', 'prov2', 'weight'];
@@ -616,7 +617,7 @@ export default function CaseStudyTable() {
                       </Tooltip>
                       <Tooltip title="Prov graph">
                         <IconButton
-                          href='/provGraph'
+                          href={`/provGraph?prov=${(row.prov)}`}
                           size="small"
                           sx={{ color: '#457985' }}
                         >

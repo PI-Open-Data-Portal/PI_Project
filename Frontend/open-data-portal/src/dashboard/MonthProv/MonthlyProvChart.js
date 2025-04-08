@@ -169,9 +169,17 @@ const MonthlyProvChart = () => {
     : [];
 
   return (
-    <Card elevation={3} sx={{ marginBottom: 4 }}>
+    <Card elevation={3} sx={{ marginBottom: 4, position: 'relative' }}>
       <CardContent>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#2c3e50', fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{
+            fontWeight: 600,
+            color: '#2c3e50',
+            fontFamily: "'Kdam Thmor Pro', sans-serif",
+          }}
+        >
           Provenance by Month
         </Typography>
 
@@ -181,6 +189,24 @@ const MonthlyProvChart = () => {
           </Alert>
         )}
 
+        {/* Filtro estático com o texto "Jun 2023" no canto superior direito */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            backgroundColor: '#f1f1f1',
+            padding: '4px 12px',
+            borderRadius: 4,
+            fontWeight: 600,
+            color: '#2c3e50',
+            fontFamily: "'Kdam Thmor Pro', sans-serif",
+            boxShadow: 2,
+          }}
+        >
+          Jun 2023
+        </Box>
+
         <Box sx={{ width: '100%', height: 500 }}>
           <ResponsiveContainer>
             <BarChart
@@ -189,31 +215,31 @@ const MonthlyProvChart = () => {
               margin={{ top: 20, right: 30, left: 100, bottom: 60 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 type="number"
                 tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
                 label={{ value: 'Count', position: 'insideBottom', offset: -5 }}
               />
-              <YAxis 
+              <YAxis
                 type="category"
                 dataKey="month"
                 tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value, name) => [`${value} units`, `Prov: ${name}`]}
                 labelFormatter={(label) => `Month: ${label}`}
                 contentStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
               />
-              <Legend 
+              <Legend
                 verticalAlign="bottom"
                 wrapperStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
                 formatter={(value) => `Prov: ${value}`}
               />
               {provTypes.map((prov, index) => (
-                <Bar 
+                <Bar
                   key={prov}
-                  dataKey={prov} 
-                  fill={colors[index % colors.length]} 
+                  dataKey={prov}
+                  fill={colors[index % colors.length]}
                   name={prov}
                   stackId="a"
                 />
@@ -223,6 +249,7 @@ const MonthlyProvChart = () => {
         </Box>
       </CardContent>
     </Card>
+
   );
 };
 
