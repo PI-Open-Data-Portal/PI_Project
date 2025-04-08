@@ -54,3 +54,8 @@
 
 ## Documentation 
 - To complete
+
+### Conection to UA VPN
+- [https://www.ua.pt/pt/stic/teletrabalho_vpn]
+- Iniciar a ligação: # snx -s go.ua.pt -u user@ua.pt
+- Terminar a ligação: # snx -d
