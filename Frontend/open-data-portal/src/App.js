@@ -9,8 +9,9 @@ import GrafoViewer from "./pages/provGraph";
 
 function App() {
   return (
+    
     <BrowserRouter>
-      <CssBaseline />
+    <CssBaseline />
       <Routes>
         <Route path="/" element={<Home />} /> {/* Página inicial */}
         <Route path="/database" element={<Database />} /> {/* Página de banco de dados */}
