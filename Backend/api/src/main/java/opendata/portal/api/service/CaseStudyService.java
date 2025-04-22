@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path; // Ensure this is the correct Path class from java.nio.file
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import opendata.portal.api.model.CaseStudy;
 import opendata.portal.api.controller.CaseStudyApiController;
 import opendata.portal.api.dto.DisembarkationPortStatDTO;
 import opendata.portal.api.dto.NST2007_2PStatDTO;
+import opendata.portal.api.dto.OutlierDTO;
 import opendata.portal.api.dto.PortPairStatDTO;
 import opendata.portal.api.dto.Prov2PrefixStatDTO;
 import opendata.portal.api.dto.WeightStatisticsDTO;
@@ -709,4 +711,21 @@ public class CaseStudyService {
             Map.entry("nst20072PLabelEN", "NST2007_2P_Label_EN"),
             Map.entry("prov", "prov"),
             Map.entry("prov2", "prov2"));
+
+    public List<OutlierDTO> getOutliers() {
+        log.info("Fetching outliers");
+        List<Object[]> result = caseStudyRepository.findOutliers();
+        List<OutlierDTO> rawDtos = new ArrayList<>();
+        for (Object[] row : result) {
+            OutlierDTO outlier = new OutlierDTO();
+            outlier.setWeight((Double) row[0]);
+            outlier.setID((Integer) row[1]);
+            outlier.setProv2((String) row[2]);
+            outlier.setMovement_Date(((Timestamp) row[3]).toLocalDateTime().toLocalDate());
+            outlier.setProv((String) row[4]);
+            rawDtos.add(outlier);
+        }
+        log.info("Fetched {} outliers", rawDtos.size());
+        return rawDtos;
+    }
 }

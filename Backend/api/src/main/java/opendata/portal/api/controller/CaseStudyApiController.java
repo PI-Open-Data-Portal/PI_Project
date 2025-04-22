@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import opendata.portal.api.service.CaseStudyService;
 import opendata.portal.api.dto.NST2007_2PStatDTO;
+import opendata.portal.api.dto.OutlierDTO;
 import opendata.portal.api.dto.Prov2PrefixStatDTO;
 import opendata.portal.api.dto.WeightStatisticsDTO;
 import opendata.portal.api.model.CaseStudy;
@@ -261,5 +262,11 @@ public class CaseStudyApiController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error while processing the request: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/outliers")
+    public ResponseEntity<List<OutlierDTO>> getOutliers() {
+        List<OutlierDTO> outliers = caseStudyService.getOutliers();
+        return ResponseEntity.ok(outliers);
     }
 }
