@@ -7,14 +7,104 @@ import {
   Card, CardContent, Typography, Box, CircularProgress, Alert
 } from '@mui/material';
 
-const MonthlyProvChart = () => {
+const MonthlyProvChart = ({ data, error }) => {
+  const colors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#9c755f', '#bab0ac'];
+
+  const provTypes = data.length > 0 
+    ? Object.keys(data[0]).filter(key => key !== 'month') 
+    : [];
+
+  return (
+    <Card elevation={3} sx={{ marginBottom: 4, position: 'relative' }}>
+      <CardContent>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{
+            fontWeight: 600,
+            color: '#2c3e50',
+            fontFamily: "'Kdam Thmor Pro', sans-serif",
+          }}
+        >
+          Provenance by Month
+        </Typography>
+
+        {error && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Filtro estático com o texto "Jun 2023" no canto superior direito */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            backgroundColor: '#f1f1f1',
+            padding: '4px 12px',
+            borderRadius: 4,
+            fontWeight: 600,
+            color: '#2c3e50',
+            fontFamily: "'Kdam Thmor Pro', sans-serif",
+            boxShadow: 2,
+          }}
+        >
+          Jun 2023
+        </Box>
+
+        <Box sx={{ width: '100%', height: 500 }}>
+          <ResponsiveContainer>
+            <BarChart
+              layout="vertical"
+              data={data}
+              margin={{ top: 20, right: 30, left: 100, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+                label={{ value: 'Count', position: 'insideBottom', offset: -5 }}
+              />
+              <YAxis
+                type="category"
+                dataKey="month"
+                tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+              />
+              <Tooltip
+                formatter={(value, name) => [`${value} units`, `Prov: ${name}`]}
+                labelFormatter={(label) => `Month: ${label}`}
+                contentStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+              />
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+                formatter={(value) => `Prov: ${value}`}
+              />
+              {provTypes.map((prov, index) => (
+                <Bar
+                  key={prov}
+                  dataKey={prov}
+                  fill={colors[index % colors.length]}
+                  name={prov}
+                  stackId="a"
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+const MonthlyProvChartContainer = () => {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(0);
 
-  const colors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#9c755f', '#bab0ac'];
   const MAX_PAGES_TO_FETCH = 30;
 
   useEffect(() => {
@@ -164,93 +254,7 @@ const MonthlyProvChart = () => {
     );
   }
 
-  const provTypes = data.length > 0 
-    ? Object.keys(data[0]).filter(key => key !== 'month') 
-    : [];
-
-  return (
-    <Card elevation={3} sx={{ marginBottom: 4, position: 'relative' }}>
-      <CardContent>
-        <Typography
-          variant="h5"
-          gutterBottom
-          sx={{
-            fontWeight: 600,
-            color: '#2c3e50',
-            fontFamily: "'Kdam Thmor Pro', sans-serif",
-          }}
-        >
-          Provenance by Month
-        </Typography>
-
-        {error && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {error} (Showing partial data)
-          </Alert>
-        )}
-
-        {/* Filtro estático com o texto "Jun 2023" no canto superior direito */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            backgroundColor: '#f1f1f1',
-            padding: '4px 12px',
-            borderRadius: 4,
-            fontWeight: 600,
-            color: '#2c3e50',
-            fontFamily: "'Kdam Thmor Pro', sans-serif",
-            boxShadow: 2,
-          }}
-        >
-          Jun 2023
-        </Box>
-
-        <Box sx={{ width: '100%', height: 500 }}>
-          <ResponsiveContainer>
-            <BarChart
-              layout="vertical"
-              data={data}
-              margin={{ top: 20, right: 30, left: 100, bottom: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-                label={{ value: 'Count', position: 'insideBottom', offset: -5 }}
-              />
-              <YAxis
-                type="category"
-                dataKey="month"
-                tick={{ fontSize: 12, fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-              />
-              <Tooltip
-                formatter={(value, name) => [`${value} units`, `Prov: ${name}`]}
-                labelFormatter={(label) => `Month: ${label}`}
-                contentStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-              />
-              <Legend
-                verticalAlign="bottom"
-                wrapperStyle={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-                formatter={(value) => `Prov: ${value}`}
-              />
-              {provTypes.map((prov, index) => (
-                <Bar
-                  key={prov}
-                  dataKey={prov}
-                  fill={colors[index % colors.length]}
-                  name={prov}
-                  stackId="a"
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-
-  );
+  return <MonthlyProvChart data={data} error={error} />;
 };
 
-export default MonthlyProvChart;
+export default MonthlyProvChartContainer;

@@ -18,7 +18,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import ScaleIcon from '@mui/icons-material/Scale';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
-import DownloadData from './DownloadData';
+import DownloadData from '../components/CaseStudy1Table/DownloadData';
 import DownloadIcon from '@mui/icons-material/Download';
 import { Chip } from '@mui/material';
 import {

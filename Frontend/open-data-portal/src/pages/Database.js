@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, AppBar, Toolbar, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
+import CaseStudyTable from '../components/CaseStudy1Table/index';
 import MainTable1 from '../components/MainTable1';
 import MainTable2 from '../components/MainTable2';
 import MainTable4 from '../components/MainTable4';
@@ -15,13 +16,11 @@ const Database = () => {
   const renderTableComponent = () => {
     switch (selectedTable) {
       case 'table1':
-        return <MainTable1 />;
+        return <CaseStudyTable />;
       case 'table2':
         return <MainTable2 />;
       case 'table3':
         return <Dataset/>;
-      default:
-        return <MainTable1 />;
     }
   };
 

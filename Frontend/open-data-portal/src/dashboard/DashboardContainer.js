@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Box, Typography } from "@mui/material";
 import axios from "axios";
-import {
-  Box,
-  CircularProgress,
-  Typography
-} from "@mui/material";
+import PortPairsFilters from "./PortPairsAnalysis/PortPairsFilters";
 
 // Import all component sections
 import { PortPairsAnalysis } from "./PortPairsAnalysis";
@@ -15,215 +12,194 @@ import EmbarkationChart from "./EmbarkDesembark/EmbarkationChart";
 import DesembarkationChart from "./EmbarkDesembark/DesembarkationChart";
 import MonthlyProvChart from "./MonthProv/MonthlyProvChart";
 import WeightBoxPlotChart from "./BoxPlot/WeightBoxPlotChart";
+import LoadingSpinner from "./common/LoadingSpinner";
 
 export default function DashboardContainer() {
   // State for all data
-  const [embarkationData, setEmbarkationData] = useState([]);
-  const [filteredEmbarkationData, setFilteredEmbarkationData] = useState([]);
+  const [portPairsData, setPortPairsData] = useState([]);
   const [productData, setProductData] = useState([]);
   const [provenanceData, setProvenanceData] = useState([]);
-  const [weightStatisticsData, setWeightStatisticsData] = useState([]);
-  
-  // Port pairs data state
-  const [portPairsData, setPortPairsData] = useState([]);
-  const [filteredPortPairsData, setFilteredPortPairsData] = useState([]);
-  const [allPorts, setAllPorts] = useState([]);
-  
-  // UI state
+  const [weightData, setWeightData] = useState(null);
+  const [monthlyProvData, setMonthlyProvData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState({});
-  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetch("http://localhost:8080/apiV1/casestudy/weight-statistics")
-      .then((response) => response.json())
-      .then((data) => {
-        const formattedData = [
-          { name: "Mean", value: data.meanWeight },
-          { name: "Median", value: data.medianWeight },
-          { name: "Standard deviation", value: data.stdDevWeight }
-        ];
-        setWeightStatisticsData(formattedData);
-      })
-      .catch((error) => {
-        console.error("Error fetching weight statistics:", error);
-        setErrors(prev => ({ ...prev, weightStats: error.message }));
-      });
-  }, []);
+  // Filter states
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [message, setMessage] = useState("");
+  const [embarkationLocations, setEmbarkationLocations] = useState([]);
+  const [disembarkationLocations, setDisembarkationLocations] = useState([]);
+  const [isTranshipment, setIsTranshipment] = useState(null);
+  const [allPorts, setAllPorts] = useState([]);
 
-  useEffect(() => {
-    Promise.all([
-      fetchEmbarkationData(),
-      fetchProductData(),
-      fetchProvenanceData(),
-      fetchPortPairsData()
-    ])
-      .then(() => setIsLoading(false))
-      .catch(err => {
-        console.error("Error fetching data:", err);
-        setIsLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    const filtered = embarkationData.filter(item =>
-      item.disembarkationPort.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredEmbarkationData(filtered);
-  }, [search, embarkationData]);
-
-  const fetchEmbarkationData = async () => {
-    try {
-      const response = await axios.get("http://localhost:8080/apiV1/casestudy/embarkation-ports");
-      console.log("Received embarkation data:", response.data);
-      setEmbarkationData(response.data);
-      setFilteredEmbarkationData(response.data);
-    } catch (error) {
-      console.error("Error fetching embarkation data", error);
-      setErrors(prev => ({ ...prev, embarkation: error.message }));
-    }
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate.toISOString().split('T')[0]);
+    if (endDate) params.append('endDate', endDate.toISOString().split('T')[0]);
+    if (message) params.append('message', message);
+    if (isTranshipment !== null) params.append('isTranshipment', isTranshipment);
+    if (embarkationLocations.length > 0) params.append('embarkationLocations', embarkationLocations.join(','));
+    if (disembarkationLocations.length > 0) params.append('disembarkationLocations', disembarkationLocations.join(','));
+    return params;
   };
 
-  const fetchProductData = async () => {
-    try {
-      const response = await axios.get("http://localhost:8080/apiV1/casestudy/2p-products");
-      // Sort data by count in descending order
-      const sortedData = response.data.sort((a, b) => b.count - a.count);
-      setProductData(sortedData);
-    } catch (error) {
-      console.error("Error fetching product data", error);
-      setErrors(prev => ({ ...prev, product: error.message }));
-    }
-  };
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    const params = buildQueryParams();
+    const queryString = params.toString() ? `?${params.toString()}` : '';
 
-  const fetchProvenanceData = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/apiV1/casestudy/prov2-prefix");
-      // Sort data in descending order of count
-      const sortedData = response.data.sort((a, b) => b.count - a.count);
-      setProvenanceData(sortedData);
-    } catch (error) {
-      console.error("Error fetching provenance data", error);
-      setErrors(prev => ({ ...prev, provenance: error.message }));
-    }
-  };
+      // Fetch port pairs data
+      const portPairsResponse = await axios.get(
+        `http://localhost:8080/apiV1/casestudy/v2/port-pairs${queryString}`
+      );
+      setPortPairsData(portPairsResponse.data);
 
-  const fetchPortPairsData = async (params = {}) => {
-    try {
-      setIsLoading(true);
-      
-      // Build query params from passed object
-      const queryParams = new URLSearchParams();
-      if (params.startDate) queryParams.append('startDate', params.startDate.toISOString().split('T')[0]);
-      if (params.endDate) queryParams.append('endDate', params.endDate.toISOString().split('T')[0]);
-      if (params.message) queryParams.append('message', params.message);
-      if (params.embarkationLocations?.length > 0) queryParams.append('embarkationLocations', params.embarkationLocations.join(','));
-      if (params.disembarkationLocations?.length > 0) queryParams.append('disembarkationLocations', params.disembarkationLocations.join(','));
-      
-      const url = `http://localhost:8080/apiV1/casestudy/v2/port-pairs${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      const response = await axios.get(url);
-      
-      setPortPairsData(response.data);
-      setFilteredPortPairsData(response.data);
-      
-      // Extract all unique ports for filters
+      // Extract unique ports
       const ports = new Set();
-      response.data.forEach(pair => {
+      portPairsResponse.data.forEach(pair => {
         ports.add(pair.embarkationPort);
         ports.add(pair.disembarkationPort);
       });
       setAllPorts(Array.from(ports).sort());
-      
-      setIsLoading(false);
+
+      // Fetch product data
+      const productResponse = await axios.get(
+        `http://localhost:8080/apiV1/casestudy/2p-products${queryString}`
+      );
+      setProductData(productResponse.data);
+
+      // Fetch provenance data
+      const provenanceResponse = await axios.get(
+        `http://localhost:8080/apiV1/casestudy/prov2-prefix${queryString}`
+      );
+      setProvenanceData(provenanceResponse.data);
+
+      // Fetch weight statistics
+      const weightResponse = await axios.get("http://localhost:8080/apiV1/casestudy/weight-statistics");
+        const formattedWeightData = [
+          { name: "Mean", value: weightResponse.data.meanWeight },
+          { name: "Median", value: weightResponse.data.medianWeight },
+          { name: "Standard deviation", value: weightResponse.data.stdDevWeight }
+        ];
+        setWeightData(formattedWeightData);
+
+      // Fetch monthly provenance data
+      const monthlyProvResponse = await axios.get(
+        `http://localhost:8080/apiV1/casestudy${queryString}`
+      );
+      setMonthlyProvData(monthlyProvResponse.data);
+
     } catch (error) {
-      console.error("Error fetching port pairs data", error);
-      setErrors(prev => ({ ...prev, portPairs: error.message }));
+      setErrors(prev => ({
+        ...prev,
+        [error.config.url]: error.message
+      }));
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Render loading state
+  // Initial data fetch
+  useEffect(() => {
+    fetchAllData();
+  }, []); // Empty dependency array for initial load
+
+  // Handle filter apply
+  const handleApply = () => {
+    fetchAllData();
+  };
+
+  // Handle filter reset
+  const handleReset = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setMessage("");
+    setEmbarkationLocations([]);
+    setDisembarkationLocations([]);
+    setIsTranshipment(null);
+    fetchAllData();
+  };
+
   if (isLoading) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        height="100vh"
-        sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingSpinner message="Loading dashboard data..." />;
   }
 
   return (
-    <Box sx={{ 
-      backgroundColor: '#f4f4f4', 
-      minHeight: '100vh', 
-      fontFamily: "'Kdam Thmor Pro', sans-serif",
-      padding: 2,
-    }}>
-      <Typography 
-        variant="h3" 
-        gutterBottom 
-        sx={{ 
-          fontWeight: 600, 
-          color: '#2c3e50', 
-          marginBottom: 3,
-          textAlign: 'center',
-          fontFamily: "'Kdam Thmor Pro', sans-serif"
-        }}
+    <Box sx={{ backgroundColor: '#f4f4f4', minHeight: '100vh', padding: 2 }}>
+      <Typography
+        variant="h3"
+        textAlign="center"
+        gutterBottom
+        sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif", fontWeight: 600, color: '#2c3e50' }}
       >
         Logistics Data Dashboard
       </Typography>
-      
-      <PortPairsAnalysis 
-        portPairsData={filteredPortPairsData}
+
+      <PortPairsFilters
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        message={message}
+        setMessage={setMessage}
+        isTranshipment={isTranshipment}
+        setIsTranshipment={setIsTranshipment}
+        embarkationLocations={embarkationLocations}
+        setEmbarkationLocations={setEmbarkationLocations}
+        disembarkationLocations={disembarkationLocations}
+        setDisembarkationLocations={setDisembarkationLocations}
         allPorts={allPorts}
-        errors={errors}
-        fetchPortPairsData={fetchPortPairsData}
+        onReset={handleReset}
+        onApply={handleApply}
       />
 
-      <EmbarkationChart
-        embarkationData={filteredEmbarkationData}
-        search={search}
-        setSearch={setSearch}
-        errors={errors.embarkation}
+      <PortPairsAnalysis 
+        data={portPairsData} 
+        filters={{
+          startDate,
+          endDate,
+          embarkationLocations,
+          disembarkationLocations
+        }}
+        error={errors["port-pairs"]}
       />
-      <DesembarkationChart
-        embarkationData={filteredEmbarkationData}
-        search={search}
-        setSearch={setSearch}
-        errors={errors.embarkation}
+
+      <EmbarkationChart 
+        data={portPairsData} 
+        error={errors["port-pairs"]}
       />
-      
+
+      <DesembarkationChart 
+        data={portPairsData} 
+        error={errors["port-pairs"]}
+      />
+
       <ProductAnalysis 
-        productData={productData}
-        errors={errors.product}
+        data={productData} 
+        error={errors["products"]}
       />
-      
+
       <ProvenanceAnalysis 
-        provenanceData={provenanceData}
-        errors={errors.provenance}
+        data={provenanceData} 
+        error={errors["provenance"]}
       />
-      
+
       <WeightStatistics 
-        weightStatisticsData={weightStatisticsData}
-        errors={errors.weightStats}
+        data={weightData} 
+        error={errors["weight-statistics"]}
       />
 
-      <MonthlyProvChart
-        provenanceData={provenanceData}
-        errors={errors.provenance}
+      <MonthlyProvChart 
+        data={monthlyProvData} 
+        error={errors["monthly-prov"]}
       />
 
-      <WeightBoxPlotChart
-        embarkationData={filteredEmbarkationData}
-        errors={errors.embarkation}
+      <WeightBoxPlotChart 
+        data={weightData} 
+        error={errors["weight"]}
       />
-
-
     </Box>
   );
 }
