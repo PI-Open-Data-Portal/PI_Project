@@ -35,6 +35,11 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip
 } from '@mui/material';
 
 
@@ -68,18 +73,19 @@ import DonutLargeIcon from '@mui/icons-material/DonutLarge';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import PersonIcon from '@mui/icons-material/Person';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const drawerWidth = 240;
 
 const errorReports = [
-    { description: 'Numeric Error', table: 'Ship Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe' },
-    { description: 'Invalid Format', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe' },
-    { description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe' },
-    { description: 'Invalid Format', table: 'Container Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe' },
-    { description: 'Numeric Error', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe' },
-    { description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe' },
+    { id: 1, description: 'Numeric Error', table: 'Ship Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/10/2025', detailedDescription: 'Numeric value in row 12 of Ship Details table is outside of acceptable range parameters. The system expected a value between 0-1000, but received 1500.' },
+    { id: 2, description: 'Invalid Format', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe', dateReported: '05/08/2025', detailedDescription: 'Date format in row 45 is incorrect. Expected format is DD/MM/YYYY but received MM-DD-YYYY.' },
+    { id: 3, description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/11/2025', detailedDescription: 'Container ID in row 23 does not match the expected format pattern. Expected: CONT-XXXXX, Received: CT-12345.' },
+    { id: 4, description: 'Invalid Format', table: 'Container Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/09/2025', detailedDescription: 'Value in weight field in row 12 contains non-numeric characters. Expected: numeric value, Received: "12.5kg".' },
+    { id: 5, description: 'Numeric Error', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe', dateReported: '05/07/2025', detailedDescription: 'Calculated values in row 45 do not match expected results. Volume calculation is incorrect based on provided dimensions.' },
+    { id: 6, description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/10/2025', detailedDescription: 'Missing required field in row 23. Destination port field is empty but is required for processing.' },
   ];
 
 // Dados de exemplo para os cards
@@ -147,7 +153,6 @@ const recentStats = [
     { title: 'Total Traffic', value: '+8%', isUp: true, period: 'Last 30 days' },
 ];
   
-
 const recentTasks = [
     { title: 'System Update', completed: 75, deadline: '03/25/2025', priority: 'High' },
     { title: 'Database Backup', completed: 100, deadline: '03/20/2025', priority: 'High' },
@@ -155,15 +160,14 @@ const recentTasks = [
     { title: 'Data Migration', completed: 10, deadline: '04/15/2025', priority: 'Low' },
   ];
   
-
-  const reportsData = [
+const reportsData = [
     { title: 'Sales Report', date: '03/15/2025', downloads: 324, status: 'Completed' },
     { title: 'Performance Analysis', date: '03/12/2025', downloads: 156, status: 'Completed' },
     { title: 'User Metrics', date: '03/18/2025', downloads: 212, status: 'In Progress' },
     { title: 'System Audit', date: '03/10/2025', downloads: 89, status: 'Completed' },
   ];
   
-  const systemTables = [
+const systemTables = [
     { name: 'ships', records: '2,567', lastUpdate: '03/19/2025', size: '45 MB', status: 'Optimized' },
     { name: 'containers', records: '8,423', lastUpdate: '03/18/2025', size: '120 MB', status: 'Optimized' },
     { name: 'orders', records: '15,892', lastUpdate: '03/19/2025', size: '230 MB', status: 'Requires Indexing' },
@@ -171,380 +175,431 @@ const recentTasks = [
     { name: 'logs', records: '458,921', lastUpdate: '03/19/2025', size: '1.2 GB', status: 'Requires Cleanup' },
   ];
   
-
-
 function AdminDashboard() {
-
     const [filteredReports, setFilteredReports] = useState(errorReports);
-  const [searchTable, setSearchTable] = useState('');
-  const [searchAnalyst, setSearchAnalyst] = useState('');
-  const [severityFilter, setSeverityFilter] = useState('all'); // Instead of array
+    const [searchTable, setSearchTable] = useState('');
+    const [searchAnalyst, setSearchAnalyst] = useState('');
+    const [severityFilter, setSeverityFilter] = useState('all');
+    const [openErrorModal, setOpenErrorModal] = useState(false);
+    const [selectedError, setSelectedError] = useState(null);
 
-  // Função para converter severidade em valores numéricos
-  const getSeverityValue = (severity) => {
-    switch (severity) {
-      case 'High': return 100;
-      case 'Medium': return 50;
-      case 'Low': return 10;
-      default: return 0;
-    }
-  };
+    // Function to handle opening the error modal
+    const handleOpenErrorModal = (error) => {
+        setSelectedError(error);
+        setOpenErrorModal(true);
+    };
 
-  // Função para filtrar os erros com base nos critérios
-  const handleFilterChange = () => {
-    const filtered = errorReports.filter(report => {
-      return (
-        (searchTable === '' || report.table.toLowerCase().includes(searchTable.toLowerCase())) &&
-        (searchAnalyst === '' || report.analyst.toLowerCase().includes(searchAnalyst.toLowerCase())) &&
-        (severityFilter === 'all' || report.severity.toLowerCase() === severityFilter.toLowerCase())
-      );
-    });
-    setFilteredReports(filtered);
-  };
+    // Função para converter severidade em valores numéricos
+    const getSeverityValue = (severity) => {
+        switch (severity) {
+            case 'High': return 100;
+            case 'Medium': return 50;
+            case 'Low': return 10;
+            default: return 0;
+        }
+    };
 
-  // useEffect para garantir que o filtro seja aplicado sempre que os campos de pesquisa ou o slider mudarem
-  useEffect(() => {
-    handleFilterChange();
-  }, [searchTable, searchAnalyst, severityFilter]);
+    // Função para filtrar os erros com base nos critérios
+    const handleFilterChange = () => {
+        const filtered = errorReports.filter(report => {
+            return (
+                (searchTable === '' || report.table.toLowerCase().includes(searchTable.toLowerCase())) &&
+                (searchAnalyst === '' || (report.reporter && report.reporter.toLowerCase().includes(searchAnalyst.toLowerCase()))) &&
+                (severityFilter === 'all' || report.severity.toLowerCase() === severityFilter.toLowerCase())
+            );
+        });
+        setFilteredReports(filtered);
+    };
 
+    // useEffect para garantir que o filtro seja aplicado sempre que os campos de pesquisa ou o slider mudarem
+    useEffect(() => {
+        handleFilterChange();
+    }, [searchTable, searchAnalyst, severityFilter]);
 
-  const [open, setOpen] = React.useState(true);
-  const [page, setPage] = React.useState(1);
-  const usersPerPage = 6;
+    const [open, setOpen] = React.useState(true);
+    const [page, setPage] = React.useState(1);
+    const usersPerPage = 6;
 
-  // Refs para scroll
-  const statusRef = useRef(null);
-  const reportsRef = useRef(null);
-  const usersRef = useRef(null);
-  const tablesRef = useRef(null);
-  const chartsRef = useRef(null);
+    // Refs para scroll
+    const statusRef = useRef(null);
+    const reportsRef = useRef(null);
+    const usersRef = useRef(null);
+    const tablesRef = useRef(null);
+    const chartsRef = useRef(null);
 
-  const toggleDrawer = () => {
-    setOpen(!open);
-  };
+    const toggleDrawer = () => {
+        setOpen(!open);
+    };
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
+    const handleChangePage = (event, value) => {
+        setPage(value);
+    };
 
-  const scrollToSection = (ref) => {
-    ref.current.scrollIntoView({ behavior: 'smooth' });
-  };
+    const scrollToSection = (ref) => {
+        ref.current.scrollIntoView({ behavior: 'smooth' });
+    };
 
-  // Cálculo para paginação
-  const indexOfLastUser = page * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = allUserData.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(allUserData.length / usersPerPage);
+    // Cálculo para paginação
+    const indexOfLastUser = page * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = allUserData.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(allUserData.length / usersPerPage);
 
-  return (
-    <Box sx={{ display: 'flex' }}>
-      {/* AppBar */}
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'white', color: 'black', boxShadow: 1 }}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={toggleDrawer}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <img src={logo} style={{ height: 70, marginRight: 10 }} />
-            <Typography variant="h5" noWrap component="div">
-              Admin Page
-            </Typography>
-          </Box>
-          <IconButton color="inherit">
-            <NotificationsIcon />
-          </IconButton>
-          <IconButton color="inherit">
-            <EmailIcon />
-          </IconButton>
-          <IconButton color="inherit">
-            <AccountCircleIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    return (
+        <Box sx={{ display: 'flex' }}>
+            {/* AppBar */}
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'white', color: 'black', boxShadow: 1 }}>
+                <Toolbar>
+                    <IconButton
+                        color="inherit"
+                        aria-label="open drawer"
+                        edge="start"
+                        onClick={toggleDrawer}
+                        sx={{ mr: 2 }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                        <img src={logo} style={{ height: 70, marginRight: 10 }} alt="Logo" />
+                        <Typography variant="h5" noWrap component="div">
+                            Admin Page
+                        </Typography>
+                    </Box>
+                    <IconButton color="inherit">
+                        <NotificationsIcon />
+                    </IconButton>
+                    <IconButton color="inherit">
+                        <EmailIcon />
+                    </IconButton>
+                    <IconButton color="inherit">
+                        <AccountCircleIcon />
+                    </IconButton>
+                </Toolbar>
+            </AppBar>
 
-      {/* Drawer */}
-      <Drawer
-        variant="permanent"
-        open={open}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: '#457884',
-            color: 'white',
-          },
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: 'auto', pt: 2 }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
-            <Avatar alt="Admin" src="/static/images/avatar/1.jpg" sx={{ mr: 2 }} />
-            <Box>
-              <Typography variant="subtitle1" sx={{ color: 'white' }}>Bruno Tavares</Typography>
-              <Typography variant="body2" sx={{ color: '#4CAF50' }}>Online</Typography>
-            </Box>
-          </Box>
-          <Typography variant="h6" sx={{ px: 2, py: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-            General
-          </Typography>
-          <List>
-            <ListItem button onClick={() => scrollToSection(statusRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-              <ListItemIcon sx={{ color: '#ffffff' }}>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Status" />
-            </ListItem>
-            <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-              <ListItemIcon sx={{ color: '#ffffff' }}>
-                <AssessmentIcon />
-              </ListItemIcon>
-              <ListItemText primary="Data Reports" />
-            </ListItem>
-            <ListItem button onClick={() => scrollToSection(usersRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-              <ListItemIcon sx={{ color: '#ffffff' }}>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText primary="Users" />
-            </ListItem>
-            <ListItem button onClick={() => scrollToSection(tablesRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-              <ListItemIcon sx={{ color: '#ffffff' }}>
-                <TableChartIcon />
-              </ListItemIcon>
-              <ListItemText primary="Tables" />
-            </ListItem>
-            <ListItem button onClick={() => scrollToSection(chartsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-              <ListItemIcon sx={{ color: '#ffffff' }}>
-                <BarChartIcon />
-              </ListItemIcon>
-              <ListItemText primary="Charts" />
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
-
-      {/* Main content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#F5F5F5', minHeight: '100vh' }}>
-        <Toolbar />
-        <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
-          Dashboard
-        </Typography>
-
-        {/* Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {cardData.map((card, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={4} xl={2} key={index}>
-              <Paper
-                elevation={2}
+            {/* Drawer */}
+            <Drawer
+                variant="permanent"
+                open={open}
                 sx={{
-                  p: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  borderRadius: 2,
-                  height: '100%',
+                    width: drawerWidth,
+                    flexShrink: 0,
+                    '& .MuiDrawer-paper': {
+                        width: drawerWidth,
+                        boxSizing: 'border-box',
+                        backgroundColor: '#457884',
+                        color: 'white',
+                    },
                 }}
-              >
-                {card.icon}
-                <Typography variant="h4" sx={{ mt: 2, fontWeight: 'bold' }}>
-                  {card.value}
-                </Typography>
-                <Typography variant="body1" sx={{ color: '#757575' }}>
-                  {card.title}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Status Section */}
-        <Box ref={statusRef} sx={{ scrollMarginTop: '64px' }}>
-          <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-            System Status
-          </Typography>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* System Status */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    System Problems
-                  </Typography>
-                  <IconButton>
-                    <MoreVertIcon />
-                  </IconButton>
+            >
+                <Toolbar />
+                <Box sx={{ overflow: 'auto', pt: 2 }}>
+                    <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+                        <Avatar alt="Admin" src="/static/images/avatar/1.jpg" sx={{ mr: 2 }} />
+                        <Box>
+                            <Typography variant="subtitle1" sx={{ color: 'white' }}>Bruno Tavares</Typography>
+                            <Typography variant="body2" sx={{ color: '#4CAF50' }}>Online</Typography>
+                        </Box>
+                    </Box>
+                    <Typography variant="h6" sx={{ px: 2, py: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+                        General
+                    </Typography>
+                    <List>
+                        <ListItem button onClick={() => scrollToSection(statusRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <DashboardIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Status" />
+                        </ListItem>
+                        <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <AssessmentIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Data Reports" />
+                        </ListItem>
+                        <ListItem button onClick={() => scrollToSection(usersRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <PeopleIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Users" />
+                        </ListItem>
+                        <ListItem button onClick={() => scrollToSection(tablesRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <TableChartIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Tables" />
+                        </ListItem>
+                        <ListItem button onClick={() => scrollToSection(chartsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <BarChartIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Charts" />
+                        </ListItem>
+                    </List>
                 </Box>
-                <Divider sx={{ mb: 2 }} />
-                <List>
-                  {systemStatusData.map((item, index) => (
-                    <ListItem key={index} sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={item.title} 
-                        secondary={`Uptime: ${item.uptime}`} 
-                      />
-                      <Chip 
-                        label={item.status} 
-                        color={
-                          item.status === 'Online' ? 'success' : 
-                          item.status === 'Atenção' ? 'warning' : 'error'
-                        }
-                        size="small"
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-                <Button variant="text" sx={{ mt: 2 }}>
-                  Full details &rarr;
-                </Button>
-              </Paper>
-            </Grid>
+            </Drawer>
 
-            {/* Recent Stats */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-                  Recent Status
+            {/* Main content */}
+            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#F5F5F5', minHeight: '100vh' }}>
+                <Toolbar />
+                <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
+                    Dashboard
                 </Typography>
-                <Grid container spacing={2}>
-                  {recentStats.map((stat, index) => (
-                    <Grid item xs={12} sm={6} key={index}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="h6" component="div">
-                              {stat.title}
-                            </Typography>
-                            {stat.isUp ? 
-                              <TrendingUpIcon sx={{ color: '#4CAF50' }} /> : 
-                              <TrendingDownIcon sx={{ color: '#F44336' }} />
-                            }
-                          </Box>
-                          <Typography variant="h4" sx={{ my: 1 }}>
-                            {stat.value}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                            <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                            {stat.period}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
+
+                {/* Cards */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    {cardData.map((card, index) => (
+                        <Grid item xs={12} sm={6} md={4} lg={4} xl={2} key={index}>
+                            <Paper
+                                elevation={2}
+                                sx={{
+                                    p: 3,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    borderRadius: 2,
+                                    height: '100%',
+                                }}
+                            >
+                                {card.icon}
+                                <Typography variant="h4" sx={{ mt: 2, fontWeight: 'bold' }}>
+                                    {card.value}
+                                </Typography>
+                                <Typography variant="body1" sx={{ color: '#757575' }}>
+                                    {card.title}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    ))}
                 </Grid>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-        
 
-        {/* Reports Section */}
-      <Box ref={reportsRef} sx={{ padding: 0 , marginBottom: 4 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Data Error Reports
-      </Typography>
+                {/* Status Section */}
+                <Box ref={statusRef} sx={{ scrollMarginTop: '64px' }}>
+                    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
+                        System Status
+                    </Typography>
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
+                        {/* System Status */}
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                                        System Problems
+                                    </Typography>
+                                    <IconButton>
+                                        <MoreVertIcon />
+                                    </IconButton>
+                                </Box>
+                                <Divider sx={{ mb: 2 }} />
+                                <List>
+                                    {systemStatusData.map((item, index) => (
+                                        <ListItem key={index} sx={{ px: 0 }}>
+                                            <ListItemIcon>
+                                                {item.icon}
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={item.title}
+                                                secondary={`Uptime: ${item.uptime}`}
+                                            />
+                                            <Chip
+                                                label={item.status}
+                                                color={
+                                                    item.status === 'Online' ? 'success' :
+                                                        item.status === 'Warning' ? 'warning' : 'error'
+                                                }
+                                                size="small"
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                                <Button variant="text" sx={{ mt: 2 }}>
+                                    Full details &rarr;
+                                </Button>
+                            </Paper>
+                        </Grid>
 
-      {/* Filter Section */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6">Filter Errors</Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Search by Table"
-              variant="outlined"
-              value={searchTable}
-              onChange={(e) => { setSearchTable(e.target.value); handleFilterChange(); }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Search by Analyst"
-              variant="outlined"
-              value={searchAnalyst}
-              onChange={(e) => { setSearchAnalyst(e.target.value); handleFilterChange(); }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Severity</InputLabel>
-              <Select
-                value={severityFilter}
-                label="Severity"
-                onChange={(e) => { setSeverityFilter(e.target.value); handleFilterChange(); }}
-              >
-                <MenuItem value="all">All Severities</MenuItem>
-                <MenuItem value="high">High</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="low">Low</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </Box>
+                        {/* Recent Stats */}
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
+                                <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+                                    Recent Status
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    {recentStats.map((stat, index) => (
+                                        <Grid item xs={12} sm={6} key={index}>
+                                            <Card variant="outlined">
+                                                <CardContent>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <Typography variant="h6" component="div">
+                                                            {stat.title}
+                                                        </Typography>
+                                                        {stat.isUp ?
+                                                            <TrendingUpIcon sx={{ color: '#4CAF50' }} /> :
+                                                            <TrendingDownIcon sx={{ color: '#F44336' }} />
+                                                        }
+                                                    </Box>
+                                                    <Typography variant="h4" sx={{ my: 1 }}>
+                                                        {stat.value}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                                                        {stat.period}
+                                                    </Typography>
+                                                </CardContent>
+                                            </Card>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </Paper>
+                        </Grid>
+                    </Grid>
+                </Box>
 
-      {/* Error Reports Section */}
-      <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6">Total Errors: {filteredReports.length}</Typography>
-          <Button variant="contained" startIcon={<FileDownloadIcon />} size="small">
-            Download Reports
-          </Button>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Error Description</TableCell>
-                <TableCell>Table Name</TableCell>
-                <TableCell>ID</TableCell>
-                <TableCell>Severity</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Reporter</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredReports.map((error, index) => (
-                <TableRow key={index}>
-                  <TableCell>{error.description}</TableCell>
-                  <TableCell>{error.table}</TableCell>
-                  <TableCell>{error.row}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={error.severity} 
-                      color={
-                        error.severity === 'High' ? 'error' : 
-                        error.severity === 'Medium' ? 'warning' : 'info'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={error.status} 
-                      color={error.status === 'Resolved' ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{error.reporter}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+                {/* Error Reports Section */}
+                <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
+                    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
+                        Error Reports
+                    </Typography>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                            <Typography variant="h6">Total Errors: {filteredReports.length}</Typography>
+                            <Button variant="contained" startIcon={<FileDownloadIcon />} size="small">
+                                Download Reports
+                            </Button>
+                        </Box>
+                        <Divider sx={{ mb: 2 }} />
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Error Description</TableCell>
+                                        <TableCell>Table Name</TableCell>
+                                        <TableCell>ID</TableCell>
+                                        <TableCell>Severity</TableCell>
+                                        <TableCell>Status</TableCell>
+                                        <TableCell>Reporter</TableCell>
+                                        <TableCell align="center">Actions</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {filteredReports.map((error) => (
+                                        <TableRow key={error.id}>
+                                            <TableCell>{error.description}</TableCell>
+                                            <TableCell>{error.table}</TableCell>
+                                            <TableCell>{error.row}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={error.severity}
+                                                    color={
+                                                        error.severity === 'High' ? 'error' :
+                                                            error.severity === 'Medium' ? 'warning' : 'info'
+                                                    }
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={error.status}
+                                                    color={error.status === 'Resolved' ? 'success' : 'warning'}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>{error.reporter}</TableCell>
+                                            <TableCell align="center">
+                                                <Tooltip title="View Details">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleOpenErrorModal(error)}
+                                                        sx={{ color: '#457985' }}
+                                                    >
+                                                        <VisibilityIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+
+
+      {/* Error Details Modal */}
+      <Dialog 
+        open={openErrorModal} 
+        onClose={() => setOpenErrorModal(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Error Details
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedError && (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Error ID</Typography>
+                  <Typography variant="body1" gutterBottom>{selectedError.row}</Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Table</Typography>
+                  <Typography variant="body1" gutterBottom>{selectedError.table}</Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Reported By</Typography>
+                  <Typography variant="body1" gutterBottom>{selectedError.reporter}</Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Date Reported</Typography>
+                  <Typography variant="body1" gutterBottom>{selectedError.dateReported}</Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Severity</Typography>
+                  <Chip
+                    label={selectedError.severity}
+                    color={
+                      selectedError.severity === 'High' ? 'error' :
+                      selectedError.severity === 'Medium' ? 'warning' : 'info'
+                    }
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="textSecondary">Status</Typography>
+                  <Chip
+                    label={selectedError.status}
+                    color={selectedError.status === 'Resolved' ? 'success' : 'warning'}
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">Brief Description</Typography>
+                  <Typography variant="body1" paragraph>
+                    {selectedError.description}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">Detailed Description</Typography>
+                  <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
+                    <Typography variant="body1">
+                      {selectedError.detailedDescription}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenErrorModal(false)}>Close</Button>
+          {selectedError && selectedError.status !== 'Resolved' && (
+            <Button variant="contained" color="primary">
+              Mark as Resolved
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
 
         {/* Users Section */}
@@ -736,8 +791,9 @@ function AdminDashboard() {
         </Grid>
         </Box>
         </Box>
-        </Box>
+    </Box>
         );
 }
+
 
 export default AdminDashboard;
