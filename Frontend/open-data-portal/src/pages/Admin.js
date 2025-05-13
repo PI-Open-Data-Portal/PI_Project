@@ -30,7 +30,11 @@ import {
   Pagination,
   Stack,
   Slider,
-  TextField
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 
 
@@ -70,12 +74,12 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsi
 const drawerWidth = 240;
 
 const errorReports = [
-    { description: 'Missing Value', table: 'Sales Data', row: 12, severity: 'High', status: 'Unresolved', analyst: 'John Doe' },
-    { description: 'Duplicate Entry', table: 'Customer Data', row: 45, severity: 'Medium', status: 'Resolved', analyst: 'Jane Smith' },
-    { description: 'Invalid Format', table: 'Product Data', row: 23, severity: 'Low', status: 'Unresolved', analyst: 'John Doe' },
-    { description: 'Missing Value', table: 'Sales Data', row: 12, severity: 'High', status: 'Unresolved', analyst: 'John Doe' },
-    { description: 'Duplicate Entry', table: 'Customer Data', row: 45, severity: 'Medium', status: 'Resolved', analyst: 'Jane Smith' },
-    { description: 'Invalid Format', table: 'Product Data', row: 23, severity: 'Low', status: 'Unresolved', analyst: 'John Doe' },
+    { description: 'Numeric Error', table: 'Ship Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe' },
+    { description: 'Invalid Format', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe' },
+    { description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe' },
+    { description: 'Invalid Format', table: 'Container Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe' },
+    { description: 'Numeric Error', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe' },
+    { description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe' },
   ];
 
 // Dados de exemplo para os cards
@@ -174,7 +178,7 @@ function AdminDashboard() {
     const [filteredReports, setFilteredReports] = useState(errorReports);
   const [searchTable, setSearchTable] = useState('');
   const [searchAnalyst, setSearchAnalyst] = useState('');
-  const [severityFilter, setSeverityFilter] = useState([0, 100]);
+  const [severityFilter, setSeverityFilter] = useState('all'); // Instead of array
 
   // Função para converter severidade em valores numéricos
   const getSeverityValue = (severity) => {
@@ -189,11 +193,10 @@ function AdminDashboard() {
   // Função para filtrar os erros com base nos critérios
   const handleFilterChange = () => {
     const filtered = errorReports.filter(report => {
-      const severityValue = getSeverityValue(report.severity);
       return (
         (searchTable === '' || report.table.toLowerCase().includes(searchTable.toLowerCase())) &&
         (searchAnalyst === '' || report.analyst.toLowerCase().includes(searchAnalyst.toLowerCase())) &&
-        (severityValue >= severityFilter[0] && severityValue <= severityFilter[1])
+        (severityFilter === 'all' || report.severity.toLowerCase() === severityFilter.toLowerCase())
       );
     });
     setFilteredReports(filtered);
@@ -474,15 +477,19 @@ function AdminDashboard() {
             />
           </Grid>
           <Grid item xs={12} md={4}>
-            <Typography>Filter by Severity</Typography>
-            <Slider
-              value={severityFilter}
-              onChange={(e, newValue) => { setSeverityFilter(newValue); handleFilterChange(); }}
-              valueLabelDisplay="auto"
-              valueLabelFormat={(value) => `${value}%`}
-              min={0}
-              max={100}
-            />
+            <FormControl fullWidth>
+              <InputLabel>Severity</InputLabel>
+              <Select
+                value={severityFilter}
+                label="Severity"
+                onChange={(e) => { setSeverityFilter(e.target.value); handleFilterChange(); }}
+              >
+                <MenuItem value="all">All Severities</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="low">Low</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
       </Box>
@@ -502,10 +509,10 @@ function AdminDashboard() {
               <TableRow>
                 <TableCell>Error Description</TableCell>
                 <TableCell>Table Name</TableCell>
-                <TableCell>Row Number</TableCell>
+                <TableCell>ID</TableCell>
                 <TableCell>Severity</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Analyst</TableCell>
+                <TableCell>Reporter</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -531,7 +538,7 @@ function AdminDashboard() {
                       size="small"
                     />
                   </TableCell>
-                  <TableCell>{error.analyst}</TableCell>
+                  <TableCell>{error.reporter}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
