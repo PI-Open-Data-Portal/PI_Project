@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Paper,
   Table,
@@ -25,6 +24,7 @@ import {
   Select,
   MenuItem,
   TextField,
+  CircularProgress,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -35,26 +35,31 @@ import TableFilters from './TableFilters';
 import TableActions from './TableActions';
 import ColumnSelectionModal from './ColumnSelectionModal';
 import CaseStudyDetailsModal from './CaseStudyDetailsModal';
-import CodeDetailsModal from './CodeDetailsModal';
 import DownloadData from './DownloadData';
 import axios from 'axios';
+import ErrorReportService from './ErrorReportService';
+
+
 // Import constants
 import { allColumns, defaultDisplayColumns, MAX_COLUMNS } from '../../utils/constants';
 
 // Define error types for the report modal
 const ERROR_TYPES = [
   { value: 'data_inconsistency', label: 'Inconsistency data' },
-  { value: 'missing_information', label: 'Missing Value' },
-  { value: 'incorrect_values', label: 'Invalid Format' },
-  { value: 'duplicate_entry', label: 'Numerical Error' },
+  { value: 'missing_value', label: 'Missing Value' },
+  { value: 'incorrect_format', label: 'Invalid Format' },
+  { value: 'duplicate_entry', label: 'Duplicate entry' },
   { value: 'other', label: 'Other' },
 ];
 
 export default function CaseStudyTable() {
+  // Access auth context to get current user
+  
   // State for data
   const [caseStudies, setCaseStudies] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   // State for pagination
   const [page, setPage] = useState(0);
@@ -93,6 +98,7 @@ export default function CaseStudyTable() {
   // State for alerts
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('info');
   
   // State for row selection
   const [selected, setSelected] = useState([]);
@@ -117,7 +123,7 @@ export default function CaseStudyTable() {
       if (containerPlateSearch) params.containerPlate = containerPlateSearch;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
-      console.log('Sending API request with params:', params);
+      
       const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
 
       if (response.data._embedded?.caseStudyList) {
@@ -133,6 +139,7 @@ export default function CaseStudyTable() {
       }
     } catch (error) {
       console.error('Error fetching case studies:', error);
+      showAlert('Error loading case studies. Please try again.', 'error');
       setCaseStudies([]);
       setTotalItems(0);
     } finally {
@@ -185,6 +192,12 @@ export default function CaseStudyTable() {
     setSelected([]);
   };
 
+  const showAlert = (message, severity = 'info') => {
+    setAlertMessage(message);
+    setAlertSeverity(severity);
+    setAlertOpen(true);
+  };
+
   const handleCloseAlert = () => setAlertOpen(false);
   
   // Row selection handlers
@@ -214,7 +227,10 @@ export default function CaseStudyTable() {
   
   // Report Data handlers
   const handleOpenReportModal = () => {
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      showAlert('Please select at least one row to report', 'warning');
+      return;
+    }
     setOpenReportModal(true);
   };
 
@@ -224,33 +240,48 @@ export default function CaseStudyTable() {
     setErrorDescription('');
   };
 
-  const handleSubmitReport = () => {
+  const handleSubmitReport = async () => {
     if (!errorType) {
-      setAlertMessage('Por favor, selecione um tipo de erro');
-      setAlertOpen(true);
+      showAlert('Please select an error type', 'warning');
       return;
     }
 
     if (!errorDescription.trim()) {
-      setAlertMessage('Por favor, forneça uma descrição do erro');
-      setAlertOpen(true);
+      showAlert('Please provide an error description', 'warning');
       return;
     }
 
-    // Here you would implement the logic to submit the report
-    console.log("Reporting error:", {
-      itemIds: selected,
-      errorType: errorType,
-      description: errorDescription
-    });
+    setSubmittingReport(true);
     
-    setAlertMessage(`Error report submitted`);
-    setAlertOpen(true);
-    
-    // Reset after submitting
-    handleCloseReportModal();
-    // Uncomment below if you want to clear selection after submitting
-    // setSelected([]);
+    try {
+      // Get the details of selected rows to include in the report
+      const selectedRows = caseStudies.filter(study => selected.includes(study.id));
+      const tables = [...new Set(selectedRows.map(row => row.table || 'CaseStudy'))];
+      
+      // Create the report data object
+      const reportData = {
+        itemIds: selected,
+        errorType: errorType,
+        description: errorDescription,
+        table: tables.join(', '),
+        dateReported: new Date().toISOString().split('T')[0],
+        severity: errorType === 'data_inconsistency' ? 'High' : 
+                 errorType === 'missing_information' ? 'Medium' : 'Low',
+        status: 'Unresolved',
+      };
+      
+      // Submit the report
+      await ErrorReportService.submitReport(reportData);
+      
+      showAlert('Error report submitted successfully', 'success');
+      handleCloseReportModal();
+      setSelected([]);
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      showAlert('Failed to submit error report. Please try again.', 'error');
+    } finally {
+      setSubmittingReport(false);
+    }
   };
 
   return (
@@ -329,7 +360,7 @@ export default function CaseStudyTable() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={displayColumns.length + 2} align="center">
-                  Loading...
+                  <CircularProgress size={24} />
                 </TableCell>
               </TableRow>
             ) : caseStudies.length === 0 ? (
@@ -475,8 +506,14 @@ export default function CaseStudyTable() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseReportModal}>Cancel</Button>
-          <Button onClick={handleSubmitReport} variant="contained" color="primary">
-            Submit Report
+          <Button 
+            onClick={handleSubmitReport} 
+            variant="contained" 
+            color="primary"
+            disabled={submittingReport}
+            startIcon={submittingReport ? <CircularProgress size={20} /> : null}
+          >
+            {submittingReport ? 'Submitting...' : 'Submit Report'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -487,7 +524,7 @@ export default function CaseStudyTable() {
         onClose={handleCloseAlert}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseAlert} severity="info" sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseAlert} severity={alertSeverity} sx={{ width: '100%' }}>
           {alertMessage}
         </Alert>
       </Snackbar>

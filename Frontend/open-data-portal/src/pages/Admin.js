@@ -39,7 +39,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 
 
@@ -74,19 +77,16 @@ import EqualizerIcon from '@mui/icons-material/Equalizer';
 import PersonIcon from '@mui/icons-material/Person';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SearchIcon from '@mui/icons-material/Search';
 
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const drawerWidth = 240;
 
-const errorReports = [
-    { id: 1, description: 'Numeric Error', table: 'Ship Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/10/2025', detailedDescription: 'Numeric value in row 12 of Ship Details table is outside of acceptable range parameters. The system expected a value between 0-1000, but received 1500.' },
-    { id: 2, description: 'Invalid Format', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe', dateReported: '05/08/2025', detailedDescription: 'Date format in row 45 is incorrect. Expected format is DD/MM/YYYY but received MM-DD-YYYY.' },
-    { id: 3, description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/11/2025', detailedDescription: 'Container ID in row 23 does not match the expected format pattern. Expected: CONT-XXXXX, Received: CT-12345.' },
-    { id: 4, description: 'Invalid Format', table: 'Container Details', row: 12, severity: 'High', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/09/2025', detailedDescription: 'Value in weight field in row 12 contains non-numeric characters. Expected: numeric value, Received: "12.5kg".' },
-    { id: 5, description: 'Numeric Error', table: 'Ship Details', row: 45, severity: 'Medium', status: 'Resolved', reporter: 'John Doe', dateReported: '05/07/2025', detailedDescription: 'Calculated values in row 45 do not match expected results. Volume calculation is incorrect based on provided dimensions.' },
-    { id: 6, description: 'Invalid Format', table: 'Container Details', row: 23, severity: 'Low', status: 'Unresolved', reporter: 'John Doe', dateReported: '05/10/2025', detailedDescription: 'Missing required field in row 23. Destination port field is empty but is required for processing.' },
-  ];
+// URL base da API
+const API_BASE_URL = 'http://localhost:8080';
 
 // Dados de exemplo para os cards
 const cardData = [
@@ -175,13 +175,34 @@ const systemTables = [
     { name: 'logs', records: '458,921', lastUpdate: '03/19/2025', size: '1.2 GB', status: 'Requires Cleanup' },
   ];
   
+// Mapeamento de tipos de erro para ícones e cores
+const errorTypeMapping = {
+  'missing_information': { icon: <WarningIcon />, color: 'warning' },
+  'invalid_format': { icon: <ErrorIcon />, color: 'error' },
+  'duplicate_entry': { icon: <WarningIcon />, color: 'warning' },
+  'validation_error': { icon: <ErrorIcon />, color: 'error' },
+  'data_mismatch': { icon: <WarningIcon />, color: 'warning' },
+  'other': { icon: <ErrorIcon />, color: 'info' }
+};
+
+// Mapeamento de status para cores
+const statusColorMapping = {
+  'Unresolved': 'warning',
+  'Resolved': 'success',
+  'In Progress': 'info'
+};
+
 function AdminDashboard() {
-    const [filteredReports, setFilteredReports] = useState(errorReports);
-    const [searchTable, setSearchTable] = useState('');
-    const [searchAnalyst, setSearchAnalyst] = useState('');
-    const [severityFilter, setSeverityFilter] = useState('all');
+    const [errorReports, setErrorReports] = useState([]);
+    const [filteredReports, setFilteredReports] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('');
+    const [errorTypeFilter, setErrorTypeFilter] = useState('');
+    const [itemIdFilter, setItemIdFilter] = useState('');
     const [openErrorModal, setOpenErrorModal] = useState(false);
     const [selectedError, setSelectedError] = useState(null);
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
     // Function to handle opening the error modal
     const handleOpenErrorModal = (error) => {
@@ -189,32 +210,108 @@ function AdminDashboard() {
         setOpenErrorModal(true);
     };
 
-    // Função para converter severidade em valores numéricos
-    const getSeverityValue = (severity) => {
-        switch (severity) {
-            case 'High': return 100;
-            case 'Medium': return 50;
-            case 'Low': return 10;
-            default: return 0;
+    // Função para buscar os relatórios de erro da API
+    const fetchErrorReports = async () => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // Construindo a URL com os parâmetros de filtro
+            let url = `${API_BASE_URL}/apiV1/errorReports`;
+            const params = new URLSearchParams();
+            
+            if (statusFilter) params.append('status', statusFilter);
+            if (errorTypeFilter) params.append('errorType', errorTypeFilter);
+            if (itemIdFilter) params.append('itemId', itemIdFilter);
+            
+            const queryString = params.toString();
+            if (queryString) url += `?${queryString}`;
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Error fetching error reports: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            setErrorReports(data);
+            setFilteredReports(data);
+            
+            setNotification({
+                open: true,
+                message: 'Error reports loaded successfully',
+                severity: 'success'
+            });
+        } catch (err) {
+            console.error('Failed to fetch error reports:', err);
+            setError(err.message);
+            
+            setNotification({
+                open: true,
+                message: `Failed to load error reports: ${err.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Função para filtrar os erros com base nos critérios
-    const handleFilterChange = () => {
-        const filtered = errorReports.filter(report => {
-            return (
-                (searchTable === '' || report.table.toLowerCase().includes(searchTable.toLowerCase())) &&
-                (searchAnalyst === '' || (report.reporter && report.reporter.toLowerCase().includes(searchAnalyst.toLowerCase()))) &&
-                (severityFilter === 'all' || report.severity.toLowerCase() === severityFilter.toLowerCase())
-            );
-        });
-        setFilteredReports(filtered);
+    // Função para marcar um erro como resolvido
+    const markAsResolved = async (errorId) => {
+        try {
+            // Em uma aplicação real, aqui faria uma chamada PUT para a API
+            // Por exemplo: await fetch(`${API_BASE_URL}/apiV1/errorReports/${errorId}`, { method: 'PUT', body: JSON.stringify({ status: 'Resolved' }) })
+            
+            // Por enquanto, vamos apenas simular esta operação
+            setNotification({
+                open: true,
+                message: `Error #${errorId} marked as resolved`,
+                severity: 'success'
+            });
+            
+            // Fechar o modal e atualizar os dados
+            setOpenErrorModal(false);
+            fetchErrorReports();
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: `Failed to update error status: ${err.message}`,
+                severity: 'error'
+            });
+        }
     };
 
-    // useEffect para garantir que o filtro seja aplicado sempre que os campos de pesquisa ou o slider mudarem
+    // Função para formatar a data para exibição
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    // Função para aplicar filtros
+    const applyFilters = () => {
+        fetchErrorReports();
+    };
+
+    // Função para limpar filtros
+    const clearFilters = () => {
+        setStatusFilter('');
+        setErrorTypeFilter('');
+        setItemIdFilter('');
+        fetchErrorReports();
+    };
+
+    // Carregar os dados quando o componente montar
     useEffect(() => {
-        handleFilterChange();
-    }, [searchTable, searchAnalyst, severityFilter]);
+        fetchErrorReports();
+    }, []);
 
     const [open, setOpen] = React.useState(true);
     const [page, setPage] = React.useState(1);
@@ -247,6 +344,22 @@ function AdminDashboard() {
 
     return (
         <Box sx={{ display: 'flex' }}>
+            {/* Notification Snackbar */}
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={6000}
+                onClose={() => setNotification({ ...notification, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={() => setNotification({ ...notification, open: false })} 
+                    severity={notification.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {notification.message}
+                </Alert>
+            </Snackbar>
+
             {/* AppBar */}
             <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'white', color: 'black', boxShadow: 1 }}>
                 <Toolbar>
@@ -456,151 +569,259 @@ function AdminDashboard() {
                 </Box>
 
                 {/* Error Reports Section */}
-                <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
-                    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-                        Error Reports
-                    </Typography>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                            <Typography variant="h6">Total Errors: {filteredReports.length}</Typography>
-                            <Button variant="contained" startIcon={<FileDownloadIcon />} size="small">
-                                Download Reports
-                            </Button>
-                        </Box>
-                        <Divider sx={{ mb: 2 }} />
-                        <TableContainer>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Error Description</TableCell>
-                                        <TableCell>Table Name</TableCell>
-                                        <TableCell>ID</TableCell>
-                                        <TableCell>Severity</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Reporter</TableCell>
-                                        <TableCell align="center">Actions</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {filteredReports.map((error) => (
-                                        <TableRow key={error.id}>
-                                            <TableCell>{error.description}</TableCell>
-                                            <TableCell>{error.table}</TableCell>
-                                            <TableCell>{error.row}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={error.severity}
-                                                    color={
-                                                        error.severity === 'High' ? 'error' :
-                                                            error.severity === 'Medium' ? 'warning' : 'info'
-                                                    }
-                                                    size="small"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={error.status}
-                                                    color={error.status === 'Resolved' ? 'success' : 'warning'}
-                                                    size="small"
-                                                />
-                                            </TableCell>
-                                            <TableCell>{error.reporter}</TableCell>
-                                            <TableCell align="center">
-                                                <Tooltip title="View Details">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleOpenErrorModal(error)}
-                                                        sx={{ color: '#457985' }}
-                                                    >
-                                                        <VisibilityIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </TableCell>
-                                        </TableRow>
+<Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
+    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
+        Error Reports
+    </Typography>
+    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+        {/* Filter Controls */}
+        <Box sx={{ mb: 3 }}>
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel id="status-filter-label">Status</InputLabel>
+                        <Select
+                            labelId="status-filter-label"
+                            id="status-filter"
+                            value={statusFilter}
+                            label="Status"
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="Unresolved">Unresolved</MenuItem>
+                            <MenuItem value="Resolved">Resolved</MenuItem>
+                            <MenuItem value="In Progress">In Progress</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel id="error-type-filter-label">Error Type</InputLabel>
+                        <Select
+                            labelId="error-type-filter-label"
+                            id="error-type-filter"
+                            value={errorTypeFilter}
+                            label="Error Type"
+                            onChange={(e) => setErrorTypeFilter(e.target.value)}
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="missing_information">Missing Information</MenuItem>
+                            <MenuItem value="invalid_format">Invalid Format</MenuItem>
+                            <MenuItem value="duplicate_entry">Duplicate Entry</MenuItem>
+                            <MenuItem value="validation_error">Validation Error</MenuItem>
+                            <MenuItem value="data_mismatch">Data Mismatch</MenuItem>
+                            <MenuItem value="other">Other</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label="Item ID"
+                        variant="outlined"
+                        value={itemIdFilter}
+                        onChange={(e) => setItemIdFilter(e.target.value)}
+                        type="number"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button 
+                            variant="contained" 
+                            startIcon={<FilterListIcon />}
+                            onClick={applyFilters}
+                        >
+                            Filter
+                        </Button>
+                        <Button 
+                            variant="outlined" 
+                            startIcon={<RefreshIcon />}
+                            onClick={clearFilters}
+                        >
+                            Clear
+                        </Button>
+                    </Box>
+                </Grid>
+            </Grid>
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6">
+                Total Errors: {filteredReports.length}
+                {loading && <CircularProgress size={20} sx={{ ml: 2 }} />}
+            </Typography>
+            <Button variant="contained" startIcon={<FileDownloadIcon />} size="small">
+                Download Reports
+            </Button>
+        </Box>
+
+        {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+            </Alert>
+        )}
+
+        <Divider sx={{ mb: 2 }} />
+        
+        <TableContainer>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Error ID</TableCell>
+                        <TableCell>Error Type</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Item IDs</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Created At</TableCell>
+                        <TableCell align="center">Actions</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {filteredReports.length > 0 ? (
+                        filteredReports.map((error) => (
+                            <TableRow key={error.id}>
+                                <TableCell>{error.id}</TableCell>
+                                <TableCell>
+                                    <Chip
+                                        icon={errorTypeMapping[error.errorType]?.icon || errorTypeMapping.other.icon}
+                                        label={error.errorType?.replace('_', ' ')}
+                                        color={errorTypeMapping[error.errorType]?.color || errorTypeMapping.other.color}
+                                        size="small"
+                                    />
+                                </TableCell>
+                                <TableCell>{error.description}</TableCell>
+                                <TableCell>
+                                    {error.itemIds?.map((id, index) => (
+                                        <Chip 
+                                            key={index} 
+                                            label={id} 
+                                            size="small" 
+                                            sx={{ mr: 0.5, mb: 0.5 }} 
+                                        />
                                     ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Paper>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={error.status}
+                                        color={statusColorMapping[error.status] || 'default'}
+                                        size="small"
+                                    />
+                                </TableCell>
+                                <TableCell>{formatDate(error.createdAt)}</TableCell>
+                                <TableCell align="center">
+                                    <Tooltip title="View Details">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleOpenErrorModal(error)}
+                                            sx={{ color: '#457985' }}
+                                        >
+                                            <VisibilityIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={7} align="center">
+                                {loading ? 'Loading...' : 'No error reports found'}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </TableContainer>
+    </Paper>
 
-
-      {/* Error Details Modal */}
-      <Dialog 
+    {/* Error Details Modal */}
+    <Dialog 
         open={openErrorModal} 
         onClose={() => setOpenErrorModal(false)}
         maxWidth="md"
         fullWidth
-      >
+    >
         <DialogTitle>
-          Error Details
+            Error Details
         </DialogTitle>
         <DialogContent dividers>
-          {selectedError && (
-            <Box>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Error ID</Typography>
-                  <Typography variant="body1" gutterBottom>{selectedError.row}</Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Table</Typography>
-                  <Typography variant="body1" gutterBottom>{selectedError.table}</Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Reported By</Typography>
-                  <Typography variant="body1" gutterBottom>{selectedError.reporter}</Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Date Reported</Typography>
-                  <Typography variant="body1" gutterBottom>{selectedError.dateReported}</Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Severity</Typography>
-                  <Chip
-                    label={selectedError.severity}
-                    color={
-                      selectedError.severity === 'High' ? 'error' :
-                      selectedError.severity === 'Medium' ? 'warning' : 'info'
-                    }
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Status</Typography>
-                  <Chip
-                    label={selectedError.status}
-                    color={selectedError.status === 'Resolved' ? 'success' : 'warning'}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Brief Description</Typography>
-                  <Typography variant="body1" paragraph>
-                    {selectedError.description}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Detailed Description</Typography>
-                  <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
-                    <Typography variant="body1">
-                      {selectedError.detailedDescription}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
-          )}
+            {selectedError && (
+                <Box>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="textSecondary">Error ID</Typography>
+                            <Typography variant="body1" gutterBottom>{selectedError.id}</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="textSecondary">Error Type</Typography>
+                            <Chip
+                                icon={errorTypeMapping[selectedError.errorType]?.icon || errorTypeMapping.other.icon}
+                                label={selectedError.errorType?.replace('_', ' ')}
+                                color={errorTypeMapping[selectedError.errorType]?.color || errorTypeMapping.other.color}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="textSecondary">Status</Typography>
+                            <Chip
+                                label={selectedError.status}
+                                color={statusColorMapping[selectedError.status] || 'default'}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="textSecondary">Created At</Typography>
+                            <Typography variant="body1" gutterBottom>{formatDate(selectedError.createdAt)}</Typography>
+                        </Grid>
+                        {selectedError.updatedAt && (
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="subtitle2" color="textSecondary">Last Updated</Typography>
+                                <Typography variant="body1" gutterBottom>{formatDate(selectedError.updatedAt)}</Typography>
+                            </Grid>
+                        )}
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="textSecondary">Reported By</Typography>
+                            <Typography variant="body1" gutterBottom>{selectedError.reporter || 'System'}</Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="subtitle2" color="textSecondary">Item IDs</Typography>
+                            <Box sx={{ mt: 1 }}>
+                                {selectedError.itemIds?.map((id, index) => (
+                                    <Chip 
+                                        key={index} 
+                                        label={id} 
+                                        size="small" 
+                                        sx={{ mr: 0.5, mb: 0.5 }} 
+                                    />
+                                ))}
+                            </Box>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="subtitle2" color="textSecondary">Description</Typography>
+                            <Paper variant="outlined" sx={{ p: 2, mt: 1, backgroundColor: '#f9f9f9' }}>
+                                <Typography variant="body1">
+                                    {selectedError.description}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    </Grid>
+                </Box>
+            )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenErrorModal(false)}>Close</Button>
-          {selectedError && selectedError.status !== 'Resolved' && (
-            <Button variant="contained" color="primary">
-              Mark as Resolved
-            </Button>
-          )}
+            <Button onClick={() => setOpenErrorModal(false)}>Close</Button>
+            {selectedError && selectedError.status !== 'Resolved' && (
+                <Button 
+                    variant="contained" 
+                    color="primary"
+                    onClick={() => markAsResolved(selectedError.id)}
+                >
+                    Mark as Resolved
+                </Button>
+            )}
         </DialogActions>
-      </Dialog>
-    </Box>
+    </Dialog>
+</Box>
 
         {/* Users Section */}
         <Box ref={usersRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
@@ -679,116 +900,6 @@ function AdminDashboard() {
               <Button variant="outlined">See All</Button>
             </Box>
           </Paper>
-        </Box>
-
-        {/* Tables Section */}
-        <Box ref={tablesRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-            System Tables
-          </Typography>
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                Tables Management
-              </Typography>
-              <Button variant="contained" color="primary">
-                New Table
-              </Button>
-            </Box>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Registers</TableCell>
-                    <TableCell>Last Atualization</TableCell>
-                    <TableCell>Size</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {systemTables.map((table, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <StorageIcon sx={{ mr: 1, color: '#1976D2' }} />
-                          {table.name}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{table.records}</TableCell>
-                        <TableCell>{table.lastUpdate}</TableCell>
-                        <TableCell>{table.size}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={table.status} 
-                            color={table.status === 'Otimizado' ? 'success' : 'warning'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outlined" size="small">
-                            Details
-                          </Button>
-                        </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-              <Button variant="contained" startIcon={<FileDownloadIcon />} sx={{ mr: 2 }}>
-                Exportar
-              </Button>
-              <Button variant="outlined">Ver Todas</Button>
-            </Box>
-            </Paper>
-        </Box>
-
-        {/* Charts Section */}
-        <Box ref={chartsRef} sx={{ scrollMarginTop: '64px' }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-            Data Charts
-        </Typography>
-        <Grid container spacing={3}>
-            {/* Chart 1 - Gráfico de Vendas */}
-            <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-                Sales Chart
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data1}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="vendas" stroke="#8884d8" />
-                </LineChart>
-                </ResponsiveContainer>
-            </Paper>
-            </Grid>
-
-            {/* Chart 2 - Gráfico de Acessos */}
-            <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-                Access Chart
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data2}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="acessos" stroke="#82ca9d" />
-                </LineChart>
-                </ResponsiveContainer>
-            </Paper>
-            </Grid>
-        </Grid>
         </Box>
         </Box>
     </Box>
