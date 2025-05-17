@@ -21,4 +21,5 @@ public class ErrorReportDTO {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String severity;
 }

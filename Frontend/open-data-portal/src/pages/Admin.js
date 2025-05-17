@@ -80,6 +80,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -192,6 +194,8 @@ const statusColorMapping = {
   'In Progress': 'info'
 };
 
+
+
 function AdminDashboard() {
     const [errorReports, setErrorReports] = useState([]);
     const [filteredReports, setFilteredReports] = useState([]);
@@ -208,6 +212,76 @@ function AdminDashboard() {
     const handleOpenErrorModal = (error) => {
         setSelectedError(error);
         setOpenErrorModal(true);
+    };
+
+    const downloadErrorReports = async () => {
+        try {
+            // Show loading notification
+            setNotification({
+                open: true,
+                message: 'Preparing download...',
+                severity: 'info'
+            });
+            
+            // Construct URL with current filters
+            let url = `${API_BASE_URL}/apiV1/errorReports/download`;
+            const params = new URLSearchParams();
+            
+            if (statusFilter) params.append('status', statusFilter);
+            if (errorTypeFilter) params.append('errorType', errorTypeFilter);
+            if (itemIdFilter) params.append('itemId', itemIdFilter);
+            
+            const queryString = params.toString();
+            if (queryString) url += `?${queryString}`;
+            
+            // Fetch the file as blob
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Error downloading reports: ${response.statusText}`);
+            }
+            
+            // Get the blob from the response
+            const blob = await response.blob();
+            
+            // Create a download link and trigger download
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            
+            // Get filename from Content-Disposition header or use default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'error-reports.csv';
+            
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch.length === 2) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            
+            // Clean up the URL object
+            window.URL.revokeObjectURL(downloadUrl);
+            
+            setNotification({
+                open: true,
+                message: 'Reports downloaded successfully',
+                severity: 'success'
+            });
+        } catch (err) {
+            console.error('Failed to download error reports:', err);
+            
+            setNotification({
+                open: true,
+                message: `Failed to download reports: ${err.message}`,
+                severity: 'error'
+            });
+        }
     };
 
     // Função para buscar os relatórios de erro da API
@@ -256,31 +330,105 @@ function AdminDashboard() {
         }
     };
 
-    // Função para marcar um erro como resolvido
     const markAsResolved = async (errorId) => {
         try {
-            // Em uma aplicação real, aqui faria uma chamada PUT para a API
-            // Por exemplo: await fetch(`${API_BASE_URL}/apiV1/errorReports/${errorId}`, { method: 'PUT', body: JSON.stringify({ status: 'Resolved' }) })
-            
-            // Por enquanto, vamos apenas simular esta operação
+            const response = await fetch(`${API_BASE_URL}/apiV1/errorReports/${errorId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': '*/*'
+                },
+                body: JSON.stringify({ status: 'Resolved' })
+            });
+    
+            if (!response.ok) {
+                throw new Error(`Erro ao atualizar: ${response.statusText}`);
+            }
+    
             setNotification({
                 open: true,
-                message: `Error #${errorId} marked as resolved`,
+                message: `Erro #${errorId} marcado como resolvido`,
                 severity: 'success'
             });
-            
-            // Fechar o modal e atualizar os dados
+    
             setOpenErrorModal(false);
-            fetchErrorReports();
+            fetchErrorReports(); // Atualiza a lista após a mudança
         } catch (err) {
             setNotification({
                 open: true,
-                message: `Failed to update error status: ${err.message}`,
+                message: `Falha ao atualizar erro: ${err.message}`,
                 severity: 'error'
             });
         }
     };
 
+    const markAsInProgress = async (errorId) => {
+        try {
+            // Check the exact format your API expects
+            // Try different request formats if this one doesn't work
+            const response = await fetch(`${API_BASE_URL}/apiV1/errorReports/${errorId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': '*/*'
+                },
+                // The API might be expecting a different payload format
+                body: JSON.stringify({ 
+                    errorId: errorId,
+                    status: 'In Progress' 
+                })
+            });
+    
+            if (!response.ok) {
+                console.error('Error response:', response.status, response.statusText);
+                throw new Error(`Erro ao atualizar: ${response.statusText}`);
+            }
+    
+            setNotification({
+                open: true,
+                message: `Erro #${errorId} marcado como em progresso`,
+                severity: 'info'
+            });
+    
+            setOpenErrorModal(false);
+            fetchErrorReports(); // Atualiza a lista após a mudança
+        } catch (err) {
+            console.error('Update error:', err);
+            setNotification({
+                open: true,
+                message: `Falha ao atualizar erro: ${err.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
+    const handleSeverityChange = async (errorId, severity) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/apiV1/errorReports`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ errorId, severity }),
+            });
+            
+            if (response.ok) {
+                // Update local state to reflect the change
+                setFilteredReports(prev => 
+                    prev.map(report => 
+                        report.id === errorId ? { ...report, severity } : report
+                    )
+                );
+                
+
+            } else {
+
+            }
+        } catch (error) {
+            console.error('Error updating severity:', error);
+        }
+    };
+    
     // Função para formatar a data para exibição
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -318,7 +466,7 @@ function AdminDashboard() {
     const usersPerPage = 6;
 
     // Refs para scroll
-    const statusRef = useRef(null);
+    const DashRef = useRef(null);
     const reportsRef = useRef(null);
     const usersRef = useRef(null);
     const tablesRef = useRef(null);
@@ -418,11 +566,11 @@ function AdminDashboard() {
                         General
                     </Typography>
                     <List>
-                        <ListItem button onClick={() => scrollToSection(statusRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                    <ListItem button onClick={() => scrollToSection(DashRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
                             <ListItemIcon sx={{ color: '#ffffff' }}>
-                                <DashboardIcon />
+                                <AssessmentIcon />
                             </ListItemIcon>
-                            <ListItemText primary="Status" />
+                            <ListItemText primary="Dashboard" />
                         </ListItem>
                         <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
                             <ListItemIcon sx={{ color: '#ffffff' }}>
@@ -436,24 +584,12 @@ function AdminDashboard() {
                             </ListItemIcon>
                             <ListItemText primary="Users" />
                         </ListItem>
-                        <ListItem button onClick={() => scrollToSection(tablesRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-                            <ListItemIcon sx={{ color: '#ffffff' }}>
-                                <TableChartIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Tables" />
-                        </ListItem>
-                        <ListItem button onClick={() => scrollToSection(chartsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
-                            <ListItemIcon sx={{ color: '#ffffff' }}>
-                                <BarChartIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Charts" />
-                        </ListItem>
                     </List>
                 </Box>
             </Drawer>
 
             {/* Main content */}
-            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#F5F5F5', minHeight: '100vh' }}>
+            <Box ref={DashRef} component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#F5F5F5', minHeight: '100vh' }}>
                 <Toolbar />
                 <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
                     Dashboard
@@ -486,342 +622,307 @@ function AdminDashboard() {
                     ))}
                 </Grid>
 
-                {/* Status Section */}
-                <Box ref={statusRef} sx={{ scrollMarginTop: '64px' }}>
-                    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-                        System Status
-                    </Typography>
-                    <Grid container spacing={3} sx={{ mb: 4 }}>
-                        {/* System Status */}
-                        <Grid item xs={12} md={6}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                                        System Problems
-                                    </Typography>
-                                    <IconButton>
-                                        <MoreVertIcon />
-                                    </IconButton>
-                                </Box>
-                                <Divider sx={{ mb: 2 }} />
-                                <List>
-                                    {systemStatusData.map((item, index) => (
-                                        <ListItem key={index} sx={{ px: 0 }}>
-                                            <ListItemIcon>
-                                                {item.icon}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={item.title}
-                                                secondary={`Uptime: ${item.uptime}`}
-                                            />
-                                            <Chip
-                                                label={item.status}
-                                                color={
-                                                    item.status === 'Online' ? 'success' :
-                                                        item.status === 'Warning' ? 'warning' : 'error'
-                                                }
-                                                size="small"
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                                <Button variant="text" sx={{ mt: 2 }}>
-                                    Full details &rarr;
-                                </Button>
-                            </Paper>
-                        </Grid>
-
-                        {/* Recent Stats */}
-                        <Grid item xs={12} md={6}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                                <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-                                    Recent Status
-                                </Typography>
-                                <Grid container spacing={2}>
-                                    {recentStats.map((stat, index) => (
-                                        <Grid item xs={12} sm={6} key={index}>
-                                            <Card variant="outlined">
-                                                <CardContent>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <Typography variant="h6" component="div">
-                                                            {stat.title}
-                                                        </Typography>
-                                                        {stat.isUp ?
-                                                            <TrendingUpIcon sx={{ color: '#4CAF50' }} /> :
-                                                            <TrendingDownIcon sx={{ color: '#F44336' }} />
-                                                        }
-                                                    </Box>
-                                                    <Typography variant="h4" sx={{ my: 1 }}>
-                                                        {stat.value}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                                                        {stat.period}
-                                                    </Typography>
-                                                </CardContent>
-                                            </Card>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                </Box>
-
                 {/* Error Reports Section */}
-<Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
-    <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Error Reports
-    </Typography>
-    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-        {/* Filter Controls */}
-        <Box sx={{ mb: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth size="small">
-                        <InputLabel id="status-filter-label">Status</InputLabel>
-                        <Select
-                            labelId="status-filter-label"
-                            id="status-filter"
-                            value={statusFilter}
-                            label="Status"
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="Unresolved">Unresolved</MenuItem>
-                            <MenuItem value="Resolved">Resolved</MenuItem>
-                            <MenuItem value="In Progress">In Progress</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth size="small">
-                        <InputLabel id="error-type-filter-label">Error Type</InputLabel>
-                        <Select
-                            labelId="error-type-filter-label"
-                            id="error-type-filter"
-                            value={errorTypeFilter}
-                            label="Error Type"
-                            onChange={(e) => setErrorTypeFilter(e.target.value)}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="missing_information">Missing Information</MenuItem>
-                            <MenuItem value="invalid_format">Invalid Format</MenuItem>
-                            <MenuItem value="duplicate_entry">Duplicate Entry</MenuItem>
-                            <MenuItem value="validation_error">Validation Error</MenuItem>
-                            <MenuItem value="data_mismatch">Data Mismatch</MenuItem>
-                            <MenuItem value="other">Other</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                    <TextField
-                        fullWidth
-                        size="small"
-                        label="Item ID"
-                        variant="outlined"
-                        value={itemIdFilter}
-                        onChange={(e) => setItemIdFilter(e.target.value)}
-                        type="number"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
+                <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
+                    Error Reports
+                </Typography>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                    {/* Filter Controls */}
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={3}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel id="status-filter-label">Status</InputLabel>
+                                    <Select
+                                        labelId="status-filter-label"
+                                        id="status-filter"
+                                        value={statusFilter}
+                                        label="Status"
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                    >
+                                        <MenuItem value="">All</MenuItem>
+                                        <MenuItem value="Unresolved">Unresolved</MenuItem>
+                                        <MenuItem value="Resolved">Resolved</MenuItem>
+                                        <MenuItem value="In Progress">In Progress</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel id="error-type-filter-label">Error Type</InputLabel>
+                                    <Select
+                                        labelId="error-type-filter-label"
+                                        id="error-type-filter"
+                                        value={errorTypeFilter}
+                                        label="Error Type"
+                                        onChange={(e) => setErrorTypeFilter(e.target.value)}
+                                    >
+                                        <MenuItem value="">All</MenuItem>
+                                        <MenuItem value="missing_information">Missing Information</MenuItem>
+                                        <MenuItem value="invalid_format">Invalid Format</MenuItem>
+                                        <MenuItem value="duplicate_entry">Duplicate Entry</MenuItem>
+                                        <MenuItem value="validation_error">Validation Error</MenuItem>
+                                        <MenuItem value="data_mismatch">Data Mismatch</MenuItem>
+                                        <MenuItem value="other">Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Item ID"
+                                    variant="outlined"
+                                    value={itemIdFilter}
+                                    onChange={(e) => setItemIdFilter(e.target.value)}
+                                    type="number"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button 
+                                        variant="contained" 
+                                        startIcon={<FilterListIcon />}
+                                        onClick={applyFilters}
+                                    >
+                                        Filter
+                                    </Button>
+                                    <Button 
+                                        variant="outlined" 
+                                        startIcon={<RefreshIcon />}
+                                        onClick={clearFilters}
+                                    >
+                                        Clear
+                                    </Button>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6">
+                            Total Errors: {filteredReports.length}
+                            {loading && <CircularProgress size={20} sx={{ ml: 2 }} />}
+                        </Typography>
                         <Button 
                             variant="contained" 
-                            startIcon={<FilterListIcon />}
-                            onClick={applyFilters}
+                            startIcon={<FileDownloadIcon />} 
+                            size="small"
+                            onClick={downloadErrorReports}
+                            disabled={loading || filteredReports.length === 0}
                         >
-                            Filter
-                        </Button>
-                        <Button 
-                            variant="outlined" 
-                            startIcon={<RefreshIcon />}
-                            onClick={clearFilters}
-                        >
-                            Clear
+                            Download Reports
                         </Button>
                     </Box>
-                </Grid>
-            </Grid>
-        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">
-                Total Errors: {filteredReports.length}
-                {loading && <CircularProgress size={20} sx={{ ml: 2 }} />}
-            </Typography>
-            <Button variant="contained" startIcon={<FileDownloadIcon />} size="small">
-                Download Reports
-            </Button>
-        </Box>
-
-        {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-            </Alert>
-        )}
-
-        <Divider sx={{ mb: 2 }} />
-        
-        <TableContainer>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Error ID</TableCell>
-                        <TableCell>Error Type</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Item IDs</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Created At</TableCell>
-                        <TableCell align="center">Actions</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {filteredReports.length > 0 ? (
-                        filteredReports.map((error) => (
-                            <TableRow key={error.id}>
-                                <TableCell>{error.id}</TableCell>
-                                <TableCell>
-                                    <Chip
-                                        icon={errorTypeMapping[error.errorType]?.icon || errorTypeMapping.other.icon}
-                                        label={error.errorType?.replace('_', ' ')}
-                                        color={errorTypeMapping[error.errorType]?.color || errorTypeMapping.other.color}
-                                        size="small"
-                                    />
-                                </TableCell>
-                                <TableCell>{error.description}</TableCell>
-                                <TableCell>
-                                    {error.itemIds?.map((id, index) => (
-                                        <Chip 
-                                            key={index} 
-                                            label={id} 
-                                            size="small" 
-                                            sx={{ mr: 0.5, mb: 0.5 }} 
-                                        />
-                                    ))}
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={error.status}
-                                        color={statusColorMapping[error.status] || 'default'}
-                                        size="small"
-                                    />
-                                </TableCell>
-                                <TableCell>{formatDate(error.createdAt)}</TableCell>
-                                <TableCell align="center">
-                                    <Tooltip title="View Details">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => handleOpenErrorModal(error)}
-                                            sx={{ color: '#457985' }}
-                                        >
-                                            <VisibilityIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={7} align="center">
-                                {loading ? 'Loading...' : 'No error reports found'}
-                            </TableCell>
-                        </TableRow>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
                     )}
-                </TableBody>
-            </Table>
-        </TableContainer>
-    </Paper>
 
-    {/* Error Details Modal */}
-    <Dialog 
-        open={openErrorModal} 
-        onClose={() => setOpenErrorModal(false)}
-        maxWidth="md"
-        fullWidth
-    >
-        <DialogTitle>
-            Error Details
-        </DialogTitle>
-        <DialogContent dividers>
-            {selectedError && (
-                <Box>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" color="textSecondary">Error ID</Typography>
-                            <Typography variant="body1" gutterBottom>{selectedError.id}</Typography>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" color="textSecondary">Error Type</Typography>
-                            <Chip
-                                icon={errorTypeMapping[selectedError.errorType]?.icon || errorTypeMapping.other.icon}
-                                label={selectedError.errorType?.replace('_', ' ')}
-                                color={errorTypeMapping[selectedError.errorType]?.color || errorTypeMapping.other.color}
-                                size="small"
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" color="textSecondary">Status</Typography>
-                            <Chip
-                                label={selectedError.status}
-                                color={statusColorMapping[selectedError.status] || 'default'}
-                                size="small"
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" color="textSecondary">Created At</Typography>
-                            <Typography variant="body1" gutterBottom>{formatDate(selectedError.createdAt)}</Typography>
-                        </Grid>
-                        {selectedError.updatedAt && (
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" color="textSecondary">Last Updated</Typography>
-                                <Typography variant="body1" gutterBottom>{formatDate(selectedError.updatedAt)}</Typography>
-                            </Grid>
-                        )}
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" color="textSecondary">Reported By</Typography>
-                            <Typography variant="body1" gutterBottom>{selectedError.reporter || 'System'}</Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2" color="textSecondary">Item IDs</Typography>
-                            <Box sx={{ mt: 1 }}>
-                                {selectedError.itemIds?.map((id, index) => (
-                                    <Chip 
-                                        key={index} 
-                                        label={id} 
-                                        size="small" 
-                                        sx={{ mr: 0.5, mb: 0.5 }} 
-                                    />
-                                ))}
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2" color="textSecondary">Description</Typography>
-                            <Paper variant="outlined" sx={{ p: 2, mt: 1, backgroundColor: '#f9f9f9' }}>
-                                <Typography variant="body1">
-                                    {selectedError.description}
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                </Box>
-            )}
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={() => setOpenErrorModal(false)}>Close</Button>
-            {selectedError && selectedError.status !== 'Resolved' && (
-                <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={() => markAsResolved(selectedError.id)}
+                    <Divider sx={{ mb: 2 }} />
+                    
+                    <TableContainer>
+                        <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Error ID</TableCell>
+                                <TableCell>Error Type</TableCell>
+                                <TableCell>Description</TableCell>
+                                <TableCell>Item IDs</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Created At</TableCell>
+                                <TableCell>Severity</TableCell>
+                                <TableCell align="center">Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                            <TableBody>
+                                {filteredReports.length > 0 ? (
+                                    filteredReports.map((error) => (
+                                        <TableRow key={error.id}>
+                                            <TableCell>{error.id}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    icon={errorTypeMapping[error.errorType]?.icon || errorTypeMapping.other.icon}
+                                                    label={error.errorType?.replace('_', ' ')}
+                                                    color={errorTypeMapping[error.errorType]?.color || errorTypeMapping.other.color}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>{error.description}</TableCell>
+                                            <TableCell>
+                                                {error.itemIds?.map((id, index) => (
+                                                    <Chip 
+                                                        key={index} 
+                                                        label={id} 
+                                                        size="small" 
+                                                        sx={{ mr: 0.5, mb: 0.5 }} 
+                                                    />
+                                                ))}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={error.status}
+                                                    color={statusColorMapping[error.status] || 'default'}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>{formatDate(error.createdAt)}</TableCell>
+                                            <TableCell>
+                                                <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                    <Select
+                                                        value={error.severity || 'MEDIUM'}
+                                                        onChange={(e) => handleSeverityChange(error.id, e.target.value)}
+                                                        size="small"
+                                                        sx={{ height: "30px" }}
+                                                        IconComponent={(props) => <ArrowDropDownIcon {...props} sx={{ fontSize: '1.2rem' }} />}
+                                                    >
+                                                        <MenuItem value="HIGH">
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FiberManualRecordIcon sx={{ color: 'error.main', mr: 1, fontSize: '0.8rem' }} />
+                                                                High
+                                                            </Box>
+                                                        </MenuItem>
+                                                        <MenuItem value="MEDIUM">
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FiberManualRecordIcon sx={{ color: 'warning.main', mr: 1, fontSize: '0.8rem' }} />
+                                                                Medium
+                                                            </Box>
+                                                        </MenuItem>
+                                                        <MenuItem value="LOW">
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FiberManualRecordIcon sx={{ color: 'success.main', mr: 1, fontSize: '0.8rem' }} />
+                                                                Low
+                                                            </Box>
+                                                        </MenuItem>
+                                                    </Select>
+                                                </FormControl>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Tooltip title="View Details">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleOpenErrorModal(error)}
+                                                        sx={{ color: '#457985' }}
+                                                    >
+                                                        <VisibilityIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center">
+                                            {loading ? 'Loading...' : 'No error reports found'}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Paper>
+
+                {/* Error Details Modal */}
+                <Dialog 
+                    open={openErrorModal} 
+                    onClose={() => setOpenErrorModal(false)}
+                    maxWidth="md"
+                    fullWidth
                 >
-                    Mark as Resolved
-                </Button>
-            )}
-        </DialogActions>
-    </Dialog>
-</Box>
+                    <DialogTitle>
+                        Error Details
+                    </DialogTitle>
+                    <DialogContent dividers>
+                        {selectedError && (
+                            <Box>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                        <Typography variant="subtitle2" color="textSecondary">Error ID</Typography>
+                                        <Typography variant="body1" gutterBottom>{selectedError.id}</Typography>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Typography variant="subtitle2" color="textSecondary">Error Type</Typography>
+                                        <Chip
+                                            icon={errorTypeMapping[selectedError.errorType]?.icon || errorTypeMapping.other.icon}
+                                            label={selectedError.errorType?.replace('_', ' ')}
+                                            color={errorTypeMapping[selectedError.errorType]?.color || errorTypeMapping.other.color}
+                                            size="small"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Typography variant="subtitle2" color="textSecondary">Status</Typography>
+                                        <Chip
+                                            label={selectedError.status}
+                                            color={statusColorMapping[selectedError.status] || 'default'}
+                                            size="small"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Typography variant="subtitle2" color="textSecondary">Created At</Typography>
+                                        <Typography variant="body1" gutterBottom>{formatDate(selectedError.createdAt)}</Typography>
+                                    </Grid>
+                                    {selectedError.updatedAt && (
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="subtitle2" color="textSecondary">Last Updated</Typography>
+                                            <Typography variant="body1" gutterBottom>{formatDate(selectedError.updatedAt)}</Typography>
+                                        </Grid>
+                                    )}
+                                    <Grid item xs={12} md={6}>
+                                        <Typography variant="subtitle2" color="textSecondary">Reported By</Typography>
+                                        <Typography variant="body1" gutterBottom>{selectedError.reporter || 'System'}</Typography>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Typography variant="subtitle2" color="textSecondary">Item IDs</Typography>
+                                        <Box sx={{ mt: 1 }}>
+                                            {selectedError.itemIds?.map((id, index) => (
+                                                <Chip 
+                                                    key={index} 
+                                                    label={id} 
+                                                    size="small" 
+                                                    sx={{ mr: 0.5, mb: 0.5 }} 
+                                                />
+                                            ))}
+                                        </Box>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Typography variant="subtitle2" color="textSecondary">Description</Typography>
+                                        <Paper variant="outlined" sx={{ p: 2, mt: 1, backgroundColor: '#f9f9f9' }}>
+                                            <Typography variant="body1">
+                                                {selectedError.description}
+                                            </Typography>
+                                        </Paper>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenErrorModal(false)}>Close</Button>
+                        {selectedError && selectedError.status !== 'In Progress' && (
+                            <Button 
+                                variant="contained" 
+                                color="info"
+                                onClick={() => markAsInProgress(selectedError.id)}
+                            >
+                                Mark as In Progress
+                            </Button>
+                        )}
+                        {selectedError && selectedError.status !== 'Resolved' && (
+                            <Button 
+                                variant="contained" 
+                                color="primary"
+                                onClick={() => markAsResolved(selectedError.id)}
+                            >
+                                Mark as Resolved
+                            </Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
+            </Box>
 
         {/* Users Section */}
         <Box ref={usersRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>

@@ -45,4 +45,7 @@ public class ErrorReport {
     
     @Column
     private LocalDateTime updatedAt;
+
+    @Column
+    private String severity;
 }
