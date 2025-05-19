@@ -87,6 +87,9 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+
 const drawerWidth = 240;
 
 // URL base da API
@@ -101,83 +104,6 @@ const cardData = [
   { title: 'Reports', value: '783', icon: <CommentIcon sx={{ fontSize: 40, color: '#E91E63' }} /> },
   { title: 'Downloads', value: '1,568', icon: <DownloadIcon sx={{ fontSize: 40, color: '#F44336' }} /> },
 ];
-
-const data1 = [
-    { name: 'Jan', sales: 4000 },
-    { name: 'Feb', sales: 3000 },
-    { name: 'Mar', sales: 5000 },
-    { name: 'Apr', sales: 4000 },
-    { name: 'May', sales: 6000 },
-    { name: 'Jun', sales: 7000 },
-    ];
-
-    const data2 = [
-    { name: 'Jan', access: 2000 },
-    { name: 'Feb', access: 4000 },
-    { name: 'Mar', access: 3000 },
-    { name: 'Apr', access: 5000 },
-    { name: 'May', access: 6000 },
-    { name: 'Jun', access: 8000 },
-    ];
-
-
-// Dados de exemplo para a tabela de usuários (mais usuários para paginação)
-const allUserData = [
-  { id: 1, name: 'João Silva', email: 'joao.silva@email.com', role: 'Admin', status: 'Ativo', lastLogin: '10/03/2025' },
-  { id: 2, name: 'Maria Santos', email: 'maria.santos@email.com', role: 'Editor', status: 'Ativo', lastLogin: '15/03/2025' },
-  { id: 3, name: 'Pedro Oliveira', email: 'pedro.oliveira@email.com', role: 'Usuário', status: 'Inativo', lastLogin: '01/02/2025' },
-  { id: 4, name: 'Ana Costa', email: 'ana.costa@email.com', role: 'Editor', status: 'Ativo', lastLogin: '18/03/2025' },
-  { id: 5, name: 'Lucas Ferreira', email: 'lucas.ferreira@email.com', role: 'Usuário', status: 'Ativo', lastLogin: '16/03/2025' },
-  { id: 6, name: 'Juliana Mendes', email: 'juliana.mendes@email.com', role: 'Admin', status: 'Ativo', lastLogin: '19/03/2025' },
-  { id: 7, name: 'Roberto Alves', email: 'roberto.alves@email.com', role: 'Admin', status: 'Ativo', lastLogin: '14/03/2025' },
-  { id: 8, name: 'Carla Gomes', email: 'carla.gomes@email.com', role: 'Editor', status: 'Ativo', lastLogin: '17/03/2025' },
-  { id: 9, name: 'Fernando Lima', email: 'fernando.lima@email.com', role: 'Usuário', status: 'Inativo', lastLogin: '05/03/2025' },
-  { id: 10, name: 'Patrícia Rocha', email: 'patricia.rocha@email.com', role: 'Usuário', status: 'Ativo', lastLogin: '12/03/2025' },
-  { id: 11, name: 'Marcos Souza', email: 'marcos.souza@email.com', role: 'Editor', status: 'Ativo', lastLogin: '11/03/2025' },
-  { id: 12, name: 'Daniela Castro', email: 'daniela.castro@email.com', role: 'Admin', status: 'Inativo', lastLogin: '08/03/2025' },
-  { id: 13, name: 'Bruno Martins', email: 'bruno.martins@email.com', role: 'Usuário', status: 'Ativo', lastLogin: '13/03/2025' },
-  { id: 14, name: 'Laura Pereira', email: 'laura.pereira@email.com', role: 'Editor', status: 'Ativo', lastLogin: '15/03/2025' },
-  { id: 15, name: 'Rafael Moreira', email: 'rafael.moreira@email.com', role: 'Usuário', status: 'Ativo', lastLogin: '09/03/2025' },
-  { id: 16, name: 'Amanda Barros', email: 'amanda.barros@email.com', role: 'Admin', status: 'Ativo', lastLogin: '19/03/2025' },
-  { id: 17, name: 'Gabriel Nascimento', email: 'gabriel.nascimento@email.com', role: 'Usuário', status: 'Inativo', lastLogin: '07/03/2025' },
-  { id: 18, name: 'Camila Ribeiro', email: 'camila.ribeiro@email.com', role: 'Editor', status: 'Ativo', lastLogin: '16/03/2025' },
-];
-
-const systemStatusData = [
-    { title: 'Main Server', status: 'Online', uptime: '99.9%', icon: <CheckCircleIcon sx={{ color: '#4CAF50' }} /> },
-    { title: 'Database', status: 'Online', uptime: '99.7%', icon: <CheckCircleIcon sx={{ color: '#4CAF50' }} /> },
-    { title: 'API Gateway', status: 'Warning', uptime: '97.5%', icon: <WarningIcon sx={{ color: '#FF9800' }} /> },
-    { title: 'Backup Server', status: 'Offline', uptime: '0%', icon: <ErrorIcon sx={{ color: '#F44336' }} /> },
-  ];
-  
-const recentStats = [
-    { title: 'New Users', value: '+12%', isUp: true, period: 'Last 7 days' },
-    { title: 'Average Session Time', value: '24min', isUp: true, period: 'Last 30 days' },
-    { title: 'Bounce Rate', value: '-3%', isUp: false, period: 'Last 30 days' },
-    { title: 'Total Traffic', value: '+8%', isUp: true, period: 'Last 30 days' },
-];
-  
-const recentTasks = [
-    { title: 'System Update', completed: 75, deadline: '03/25/2025', priority: 'High' },
-    { title: 'Database Backup', completed: 100, deadline: '03/20/2025', priority: 'High' },
-    { title: 'Security Review', completed: 30, deadline: '04/01/2025', priority: 'Medium' },
-    { title: 'Data Migration', completed: 10, deadline: '04/15/2025', priority: 'Low' },
-  ];
-  
-const reportsData = [
-    { title: 'Sales Report', date: '03/15/2025', downloads: 324, status: 'Completed' },
-    { title: 'Performance Analysis', date: '03/12/2025', downloads: 156, status: 'Completed' },
-    { title: 'User Metrics', date: '03/18/2025', downloads: 212, status: 'In Progress' },
-    { title: 'System Audit', date: '03/10/2025', downloads: 89, status: 'Completed' },
-  ];
-  
-const systemTables = [
-    { name: 'ships', records: '2,567', lastUpdate: '03/19/2025', size: '45 MB', status: 'Optimized' },
-    { name: 'containers', records: '8,423', lastUpdate: '03/18/2025', size: '120 MB', status: 'Optimized' },
-    { name: 'orders', records: '15,892', lastUpdate: '03/19/2025', size: '230 MB', status: 'Requires Indexing' },
-    { name: 'users', records: '12,456', lastUpdate: '03/17/2025', size: '180 MB', status: 'Optimized' },
-    { name: 'logs', records: '458,921', lastUpdate: '03/19/2025', size: '1.2 GB', status: 'Requires Cleanup' },
-  ];
   
 // Mapeamento de tipos de erro para ícones e cores
 const errorTypeMapping = {
@@ -196,8 +122,6 @@ const statusColorMapping = {
   'In Progress': 'info'
 };
 
-
-
 function AdminDashboard() {
     const [errorReports, setErrorReports] = useState([]);
     const [filteredReports, setFilteredReports] = useState([]);
@@ -209,6 +133,150 @@ function AdminDashboard() {
     const [openErrorModal, setOpenErrorModal] = useState(false);
     const [selectedError, setSelectedError] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+    
+    // User state variables
+    const [users, setUsers] = useState([]);
+    const [userLoading, setUserLoading] = useState(false);
+    const [userError, setUserError] = useState(null);
+    const [page, setPage] = useState(1);
+    const usersPerPage = 6;
+    const [totalPages, setTotalPages] = useState(1);
+
+    // Add these state variables to your existing state declarations
+    const [openEditModal, setOpenEditModal] = useState(false);
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    permissions: []
+    });
+    const [availablePermissions] = useState([
+    'USER_READ',
+    'USER_WRITE',
+    'USER_DELETE',
+    'ADMIN',
+    'REPORT_READ',
+    'REPORT_WRITE',
+    'SYSTEM_SETTINGS'
+    ]);
+
+    // Function to handle opening the edit modal
+const handleOpenEditModal = (user) => {
+    setSelectedUser(user);
+    setEditFormData({
+      name: user.name,
+      email: user.email,
+      permissions: user.permissions || []
+    });
+    setOpenEditModal(true);
+  };
+  
+  // Function to handle closing the edit modal
+  const handleCloseEditModal = () => {
+    setOpenEditModal(false);
+    setSelectedUser(null);
+  };
+  
+  // Function to handle form field changes
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData({
+      ...editFormData,
+      [name]: value
+    });
+  };
+  
+  // Function to handle permissions multi-select changes
+  const handlePermissionsChange = (e) => {
+    setEditFormData({
+      ...editFormData,
+      permissions: e.target.value
+    });
+  };
+  
+  // Function to save user changes
+  const handleSaveUser = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/apiV1/auth/users/${selectedUser.email}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editFormData.name,
+          permissions: editFormData.permissions
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error updating user: ${response.statusText}`);
+      }
+  
+      // Show success notification
+      setNotification({
+        open: true,
+        message: `User ${editFormData.name} updated successfully`,
+        severity: 'success'
+      });
+  
+      // Close the modal and refresh the user list
+      handleCloseEditModal();
+      fetchUsers();
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      setNotification({
+        open: true,
+        message: `Failed to update user: ${err.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle opening the delete confirmation dialog
+  const handleOpenDeleteConfirmation = (user) => {
+    setSelectedUser(user);
+    setOpenDeleteDialog(true);
+  };
+  
+  // Function to delete a user
+  const handleDeleteUser = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/apiV1/auth/users/${selectedUser.email}`, {
+        method: 'DELETE',
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error deleting user: ${response.statusText}`);
+      }
+  
+      // Show success notification
+      setNotification({
+        open: true,
+        message: `User ${selectedUser.name} deleted successfully`,
+        severity: 'success'
+      });
+  
+      // Close the dialog and refresh the user list
+      setOpenDeleteDialog(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      setNotification({
+        open: true,
+        message: `Failed to delete user: ${err.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
     // Function to handle opening the error modal
     const handleOpenErrorModal = (error) => {
@@ -285,6 +353,50 @@ function AdminDashboard() {
             });
         }
     };
+
+    // Function to fetch users from the API
+    const fetchUsers = async () => {
+        setUserLoading(true);
+        setUserError(null);
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/apiV1/auth/users`);
+            
+            if (!response.ok) {
+                throw new Error(`Error fetching users: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            setUsers(data);
+            
+            // Calculate total pages based on API response
+            setTotalPages(Math.ceil(data.length / usersPerPage));
+            
+            setNotification({
+                open: true,
+                message: 'Users loaded successfully',
+                severity: 'success'
+            });
+        } catch (err) {
+            console.error('Failed to fetch users:', err);
+            setUserError(err.message);
+            
+            setNotification({
+                open: true,
+                message: `Failed to load users: ${err.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setUserLoading(false);
+        }
+    };
+
+    // Load the users when the component mounts
+    useEffect(() => {
+        fetchUsers();
+        fetchErrorReports();
+    }, []);
+
 
     // Função para buscar os relatórios de erro da API
     const fetchErrorReports = async () => {
@@ -464,8 +576,6 @@ function AdminDashboard() {
     }, []);
 
     const [open, setOpen] = React.useState(true);
-    const [page, setPage] = React.useState(1);
-    const usersPerPage = 6;
 
     // Refs para scroll
     const DashRef = useRef(null);
@@ -486,11 +596,11 @@ function AdminDashboard() {
         ref.current.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Cálculo para paginação
+    // Calculate the current displayed users based on pagination
     const indexOfLastUser = page * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const currentUsers = allUserData.slice(indexOfFirstUser, indexOfLastUser);
-    const totalPages = Math.ceil(allUserData.length / usersPerPage);
+    const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+
 
     return (
         <Box sx={{ display: 'flex' }}>
@@ -934,82 +1044,218 @@ function AdminDashboard() {
 
         {/* Users Section */}
         <Box ref={usersRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
             User Management
-          </Typography>
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+        </Typography>
+        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 Users List
-              </Typography>
-              <Button variant="contained" color="primary">
-                Add user
-              </Button>
-            </Box>
-            <TableContainer>
-              <Table sx={{ minWidth: 650 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Function</TableCell>
-                    <TableCell>Stats</TableCell>
-                    <TableCell>Last Login</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {currentUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, backgroundColor: '#1E88E5' }}>
-                            {user.name.charAt(0)}
-                          </Avatar>
-                          {user.name}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={user.role} 
-                          color={user.role === 'Admin' ? 'primary' : user.role === 'Editor' ? 'secondary' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={user.status} 
-                          color={user.status === 'Ativo' ? 'success' : 'error'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{user.lastLogin}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {indexOfFirstUser + 1} - {Math.min(indexOfLastUser, allUserData.length)} : {allUserData.length} users
-              </Typography>
-              <Pagination 
-                count={totalPages} 
-                page={page} 
-                onChange={handleChangePage} 
+            </Typography>
+            <Button 
+                variant="contained" 
                 color="primary" 
-              />
+                onClick={() => window.location.href = '/register'}
+                >
+                Add user
+                </Button>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-              <Button variant="contained" startIcon={<FileDownloadIcon />} sx={{ mr: 2 }}>
-                Export
-              </Button>
-              <Button variant="outlined">See All</Button>
+            {userLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
             </Box>
-          </Paper>
+            ) : userError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+                {userError}
+            </Alert>
+            ) : (
+            <>
+                <TableContainer>
+                <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                    <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Permissions</TableCell>
+                        <TableCell>Actions</TableCell>
+                    </TableRow>
+                    </TableHead>
+                    <TableBody>
+                    {currentUsers.length > 0 ? (
+                        currentUsers.map((user) => (
+                        <TableRow key={user.id}>
+                            <TableCell>{user.id}</TableCell>
+                            <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Avatar sx={{ mr: 2, backgroundColor: '#1E88E5' }}>
+                                {user.name.charAt(0)}
+                                </Avatar>
+                                {user.name}
+                            </Box>
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                            {user.permissions && user.permissions.length > 0 ? (
+                                user.permissions.map((permission, index) => (
+                                <Chip 
+                                    key={index}
+                                    label={permission} 
+                                    color="primary"
+                                    size="small"
+                                    sx={{ mr: 0.5, mb: 0.5 }}
+                                />
+                                ))
+                            ) : (
+                                <Chip 
+                                label="No permissions" 
+                                variant="outlined"
+                                size="small"
+                                />
+                            )}
+                            </TableCell>
+                            <TableCell>
+                            <IconButton 
+                                size="small" 
+                                color="primary"
+                                sx={{ mr: 1 }}
+                                onClick={() => handleOpenEditModal(user)}
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton 
+                                size="small" 
+                                color="error"
+                                sx={{ mr: 1 }}
+                                onClick={() => handleOpenDeleteConfirmation(user)}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                        <TableCell colSpan={5} align="center">
+                            No users found
+                        </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                </TableContainer>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                    Showing {users.length > 0 ? indexOfFirstUser + 1 : 0} - {Math.min(indexOfLastUser, users.length)} of {users.length} users
+                </Typography>
+                <Pagination 
+                    count={totalPages} 
+                    page={page} 
+                    onChange={handleChangePage} 
+                    color="primary" 
+                />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button variant="contained" startIcon={<FileDownloadIcon />} sx={{ mr: 2 }}>
+                    Export
+                </Button>
+                <Button 
+                    variant="outlined" 
+                    startIcon={<RefreshIcon />}
+                    onClick={fetchUsers}
+                >
+                    Refresh
+                </Button>
+                </Box>
+            </>
+            )}
+        </Paper>
+
+        {/* Edit User Modal */}
+        <Dialog open={openEditModal} onClose={handleCloseEditModal} maxWidth="sm" fullWidth>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogContent>
+            {selectedUser && (
+                <Box component="form" sx={{ mt: 2 }} noValidate>
+                <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Name"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleEditFormChange}
+                    autoFocus
+                />
+                <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    value={editFormData.email}
+                    onChange={handleEditFormChange}
+                    disabled
+                />
+                <FormControl margin="normal" fullWidth>
+                    <InputLabel>Permissions</InputLabel>
+                    <Select
+                    multiple
+                    value={editFormData.permissions || []}
+                    onChange={handlePermissionsChange}
+                    renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value) => (
+                            <Chip key={value} label={value} />
+                        ))}
+                        </Box>
+                    )}
+                    >
+                    {availablePermissions.map((permission) => (
+                        <MenuItem key={permission} value={permission}>
+                        {permission}
+                        </MenuItem>
+                    ))}
+                    </Select>
+                </FormControl>
+                </Box>
+            )}
+            </DialogContent>
+            <DialogActions>
+            <Button onClick={handleCloseEditModal}>Cancel</Button>
+            <Button onClick={handleSaveUser} color="primary" variant="contained">
+                Save
+            </Button>
+            </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+            open={openDeleteDialog}
+            onClose={() => setOpenDeleteDialog(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+            {"Confirm User Deletion"}
+            </DialogTitle>
+            <DialogContent>
+            <Typography variant="body1" id="alert-dialog-description">
+                Are you sure you want to delete user {selectedUser?.name}? This action cannot be undone.
+            </Typography>
+            </DialogContent>
+            <DialogActions>
+            <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
+                Cancel
+            </Button>
+            <Button onClick={handleDeleteUser} color="error" variant="contained" autoFocus>
+                Delete
+            </Button>
+            </DialogActions>
+        </Dialog>
         </Box>
+
+        {/* W3C Analysis Section */}
         <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
         <W3Canalysis></W3Canalysis>
         <div ></div>
@@ -1017,9 +1263,7 @@ function AdminDashboard() {
         <W3CanalysisGraphs2></W3CanalysisGraphs2>
         </Box>
         </Box>
-        
     </Box>
-    
         );
 }
 

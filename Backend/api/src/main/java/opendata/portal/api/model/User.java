@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users_table")
 @Getter
 @Setter
 public class User {
@@ -16,8 +16,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String name;
+
     @Column(unique = true, nullable = false)
-    private String username;
+    private String email;
 
     @Column(nullable = false)
     private String password;
