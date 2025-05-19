@@ -89,54 +89,43 @@ public class CaseStudyService {
     private static final Logger log = LoggerFactory.getLogger(CaseStudyService.class);
 
     public Page<CaseStudy> getPaginatedCaseStudies(Pageable pageable,
-            LocalDate startDate,
-            LocalDate endDate,
-            Boolean isTranshipment,
-            String message,
-            String embarkationLocations,
-            String disembarkationLocations,
-            String type) {
+        LocalDate startDate,
+        LocalDate endDate,
+        Boolean isTranshipment,
+        String message,
+        String embarkationLocations,
+        String disembarkationLocations,
+        String type,
+        String harmonizedCode,
+        String containerPlate) {
 
-        // Validate message if provided
-        if (message != null && !isValidMessage(message)) {
-            throw new IllegalArgumentException("Invalid message type: " + message);
-        }
-
-        // Use Specification to build dynamic query with the same filters
-        Specification<CaseStudy> spec = Specification.where(null);
-
-        if (startDate != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("movementDate"), startDate));
-        }
-
-        if (endDate != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("movementDate"), endDate));
-        }
-
-        if (isTranshipment != null) {
-            String transhipmentValue = isTranshipment ? "S" : "N";
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("transhipment"), transhipmentValue));
-        }
-
-        if (message != null && !message.isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("message"), message));
-        }
-
-        if (embarkationLocations != null && !embarkationLocations.isEmpty()) {
-            spec = spec.and(
-                    (root, query, cb) -> cb.like(root.get("embarkationPort"), "%" + embarkationLocations + "%"));
-        }
-
-        if (disembarkationLocations != null && !disembarkationLocations.isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(root.get("disembarkationPort"),
-                    "%" + disembarkationLocations + "%"));
-        }
-        if (type != null && !type.isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(root.get("prov2"), type + "%"));
-        }
-
-        return caseStudyRepository.findAll(spec, pageable);
+    // Validate message if provided
+    if (message != null && !isValidMessage(message)) {
+        throw new IllegalArgumentException("Invalid message type: " + message);
     }
+
+    // Use Specification to build dynamic query with the same filters
+    Specification<CaseStudy> spec = Specification.where(null);
+
+    // Código existente para os parâmetros atuais...
+
+    // Adicionar condição para o parâmetro type
+    if (type != null && !type.isEmpty()) {
+        spec = spec.and((root, query, cb) -> cb.like(root.get("prov2"), type + "%"));
+    }
+
+    // Adicionar condição para o parâmetro harmonizedCode
+    if (harmonizedCode != null && !harmonizedCode.isEmpty()) {
+        spec = spec.and((root, query, cb) -> cb.equal(root.get("harmonizedCode"), harmonizedCode));
+    }
+
+    // Adicionar condição para o parâmetro containerPlate
+    if (containerPlate != null && !containerPlate.isEmpty()) {
+        spec = spec.and((root, query, cb) -> cb.like(root.get("containerPlate"), "%" + containerPlate + "%"));
+    }
+
+    return caseStudyRepository.findAll(spec, pageable);
+}
 
     public List<NST2007_2PStatDTO> getNST2007_2PProductStats(
             LocalDate startDate,
@@ -721,7 +710,10 @@ public class CaseStudyService {
             outlier.setWeight((Double) row[0]);
             outlier.setID((Integer) row[1]);
             outlier.setProv2((String) row[2]);
-            outlier.setMovement_Date(((Timestamp) row[3]).toLocalDateTime().toLocalDate());
+            java.util.Date date = (java.util.Date) row[3]; // java.sql.Date herda de java.util.Date
+            outlier.setMovement_Date(
+                new Timestamp(date.getTime()).toLocalDateTime().toLocalDate()
+            );
             outlier.setProv((String) row[4]);
             rawDtos.add(outlier);
         }

@@ -68,13 +68,15 @@ public class CaseStudyApiController {
             @RequestParam(required = false) String message,
             @RequestParam(required = false) String embarkationLocations,
             @RequestParam(required = false) String disembarkationLocations,
-            @RequestParam(required = false) @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type) {
+            @RequestParam(required = false) @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type,
+            @RequestParam(required = false) String harmonizedCode,
+            @RequestParam(required = false) String containerPlate) {
         log.info("Getting all case studies with pages");
         // validateSortProperties(pageable.getSort());
         Page<CaseStudy> caseStudies = caseStudyService.getPaginatedCaseStudies(pageable, startDate, endDate,
-                isTranshipment, message,
-                embarkationLocations, disembarkationLocations, type);
-        return ResponseEntity.ok(assembler.toModel(caseStudies));
+            isTranshipment, message, embarkationLocations, disembarkationLocations, type, 
+            harmonizedCode, containerPlate);
+            return ResponseEntity.ok(assembler.toModel(caseStudies));
     }
 
     @Operation(summary = "Get case study by id")

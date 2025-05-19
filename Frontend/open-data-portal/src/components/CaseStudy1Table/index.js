@@ -84,6 +84,8 @@ export default function CaseStudyTable() {
   const [errorType, setErrorType] = useState('');
   const [errorDescription, setErrorDescription] = useState('');
 
+  const [harmonizedCodeSearch, setHarmonizedCodeSearch] = useState('');
+
   // State for column display
   const [displayColumns, setDisplayColumns] = useState(
     allColumns.filter((col) => defaultDisplayColumns.includes(col.id))
@@ -106,7 +108,7 @@ export default function CaseStudyTable() {
   // Effects
   useEffect(() => {
     fetchCaseStudies();
-  }, [page, rowsPerPage, selectedProv2, nst20073pSearch, containerPlateSearch, startDate, endDate]);
+  }, [page, rowsPerPage, selectedProv2, containerPlateSearch, harmonizedCodeSearch, startDate, endDate]);
 
   // API calls
   const fetchCaseStudies = async () => {
@@ -118,12 +120,14 @@ export default function CaseStudyTable() {
         sort: 'id,ASC',
       };
 
-      if (selectedProv2) params.prov2 = selectedProv2;
-      if (nst20073pSearch) params.nst20073P = nst20073pSearch;
+      if (selectedProv2) params.type = selectedProv2;
       if (containerPlateSearch) params.containerPlate = containerPlateSearch;
+      if (harmonizedCodeSearch) params.harmonizedCode = harmonizedCodeSearch;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       
+      console.log('params:', params);
+
       const response = await axios.get('http://localhost:8080/apiV1/casestudy', { params });
 
       if (response.data._embedded?.caseStudyList) {
@@ -293,8 +297,8 @@ export default function CaseStudyTable() {
         prov2Options={prov2Options}
         containerPlateSearch={containerPlateSearch}
         setContainerPlateSearch={setContainerPlateSearch}
-        nst20073pSearch={nst20073pSearch}
-        setNst20073pSearch={setNst20073pSearch}
+        harmonizedCodeSearch={harmonizedCodeSearch}
+        setHarmonizedCodeSearch={setHarmonizedCodeSearch}
         startDate={startDate}
         setStartDate={setStartDate}
         endDate={endDate}

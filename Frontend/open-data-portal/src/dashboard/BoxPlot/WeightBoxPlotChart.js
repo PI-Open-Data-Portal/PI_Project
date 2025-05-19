@@ -11,6 +11,17 @@ const WeightBoxPlotChart = () => {
   const [outliers, setOutliers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedOutlier, setSelectedOutlier] = useState(null);
+
+  // Define a color palette to use for different provenances
+  const colorPalette = [
+    { box: 'rgba(93, 164, 214, 0.5)', line: 'rgba(93, 164, 214, 1)', points: 'rgba(255, 65, 54, 0.7)' },
+    { box: 'rgba(44, 160, 101, 0.5)', line: 'rgba(44, 160, 101, 1)', points: 'rgba(255, 144, 14, 0.7)' },
+    { box: 'rgba(255, 65, 54, 0.5)', line: 'rgba(255, 65, 54, 1)', points: 'rgba(93, 164, 214, 0.7)' },
+    { box: 'rgba(207, 114, 255, 0.5)', line: 'rgba(207, 114, 255, 1)', points: 'rgba(44, 160, 44, 0.7)' },
+    { box: 'rgba(127, 96, 0, 0.5)', line: 'rgba(127, 96, 0, 1)', points: 'rgba(214, 39, 40, 0.7)' },
+    { box: 'rgba(255, 140, 184, 0.5)', line: 'rgba(255, 140, 184, 1)', points: 'rgba(148, 103, 189, 0.7)' },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,10 +33,10 @@ const WeightBoxPlotChart = () => {
         const outliersData = outliersResponse.data;
         
         // Group outliers by provenance for the box plot
-        const groupedOutliers = groupOutliersByProv(outliersData);
+        const { grouped: groupedOutliers, outlierDetails } = groupOutliersByProv(outliersData);
         
         // Prepare plot data showing just the outliers per provenance
-        const plotlyData = preparePlotData(groupedOutliers);
+        const plotlyData = preparePlotData(groupedOutliers, outlierDetails);
         
         setData(plotlyData);
         setOutliers(outliersData);
@@ -43,43 +54,61 @@ const WeightBoxPlotChart = () => {
   // Group outliers by provenance
   const groupOutliersByProv = (outliers) => {
     const grouped = {};
+    const outlierDetails = {}; // Store full details for each point
     
     outliers.forEach(outlier => {
       const provKey = outlier.prov2?.match(/[A-Za-z]/g)?.join('') || 'Unknown';
       
       if (!grouped[provKey]) {
         grouped[provKey] = [];
+        outlierDetails[provKey] = {};
       }
       
       grouped[provKey].push(outlier.weight);
+      // Store the outlier's full details using weight as key (for later retrieval)
+      outlierDetails[provKey][outlier.weight] = outlier;
     });
     
-    return grouped;
+    return { grouped, outlierDetails };
   };
 
-  // Prepare plot data showing outliers per provenance
+  // Prepare plot data showing outliers per provenance with different colors
   const preparePlotData = (groupedOutliers) => {
-    return Object.entries(groupedOutliers).map(([provKey, weights]) => ({
-      type: 'box',
-      y: weights,
-      name: provKey,
-      boxpoints: 'all', // Show all points since we're only displaying outliers
-      jitter: 0.3,
-      pointpos: 0,
-      marker: {
-        color: 'rgba(255, 0, 0, 0.8)',
-        size: 4,
-        
-      },
-      boxmean: true,
-      hoverinfo: 'y+name',
-      orientation: 'v',
-      hoverlabel: {
-        bgcolor: 'white',
-        bordercolor: 'black',
-        font: { family: "'Kdam Thmor Pro', sans-serif" }
-      }
-    }));
+    return Object.entries(groupedOutliers).map(([provKey, weights], index) => {
+      // Use modulo to cycle through the color palette
+      const colorIndex = index % colorPalette.length;
+      const colors = colorPalette[colorIndex];
+      
+      return {
+        type: 'box',
+        y: weights,
+        name: provKey,
+        boxpoints: 'outliers', // Only show outlier points (outside of whiskers)
+        jitter: 0.3,
+        pointpos: 0,
+        marker: {
+          color: colors.points,
+          size: 6,
+          line: {
+            width: 1,
+            color: 'rgba(0,0,0,0.5)'
+          }
+        },
+        fillcolor: colors.box,
+        line: {
+          color: colors.line,
+          width: 2
+        },
+        boxmean: true,
+        hoverinfo: 'y+name',
+        orientation: 'v',
+        hoverlabel: {
+          bgcolor: 'white',
+          bordercolor: 'black',
+          font: { family: "'Kdam Thmor Pro', sans-serif" }
+        }
+      };
+    });
   };
 
   if (isLoading) {
@@ -139,7 +168,9 @@ const WeightBoxPlotChart = () => {
                   family: "'Kdam Thmor Pro', sans-serif"
                 },
                 hovermode: 'closest',
-                showlegend: false
+                showlegend: false,
+                plot_bgcolor: 'rgba(240,240,240,0.7)',
+                paper_bgcolor: 'rgba(255,255,255,1)'
               }}
               config={{
                 responsive: true,
@@ -148,7 +179,75 @@ const WeightBoxPlotChart = () => {
                 displaylogo: false
               }}
               style={{ width: '100%', height: '100%' }}
+              onClick={(data) => {
+                // Handle point clicks
+                if (data.points && data.points.length > 0) {
+                  const point = data.points[0];
+                  // Find the outlier in our original data
+                  const clickedOutlier = outliers.find(o => 
+                    o.weight === point.y && 
+                    o.prov2?.match(/[A-Za-z]/g)?.join('') === point.data.name
+                  );
+                  
+                  if (clickedOutlier) {
+                    setSelectedOutlier(clickedOutlier);
+                  }
+                }
+              }}
             />
+          </Box>
+        )}
+        
+        {/* Selected Outlier Details */}
+        {selectedOutlier && (
+          <Box sx={{ mt: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, bgcolor: '#f9f9f9' }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#2c3e50', fontFamily: "'Kdam Thmor Pro', sans-serif" }}>
+              Selected Outlier Details
+              <Typography 
+                component="span" 
+                sx={{ 
+                  ml: 2, 
+                  cursor: 'pointer', 
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' } 
+                }}
+                onClick={() => setSelectedOutlier(null)}
+              >
+                (Close)
+              </Typography>
+            </Typography>
+            
+            <TableContainer component={Paper} sx={{ mt: 1 }}>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>ID</TableCell>
+                    <TableCell>{selectedOutlier.id}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Weight</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', color: 'error.main' }}>{selectedOutlier.weight}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Provenance</TableCell>
+                    <TableCell>{selectedOutlier.prov2}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Movement Date</TableCell>
+                    <TableCell>{selectedOutlier.movement_Date}</TableCell>
+                  </TableRow>
+                  {/* Add any additional fields that might be relevant */}
+                  {Object.entries(selectedOutlier).filter(([key]) => 
+                    !['id', 'weight', 'prov2', 'movement_Date'].includes(key)
+                  ).map(([key, value]) => (
+                    <TableRow key={key}>
+                      <TableCell sx={{ fontWeight: 'bold' }}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</TableCell>
+                      <TableCell>{value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         )}
         
