@@ -267,8 +267,22 @@ public class CaseStudyApiController {
     }
 
     @GetMapping("/outliers")
-    public ResponseEntity<List<OutlierDTO>> getOutliers() {
-        List<OutlierDTO> outliers = caseStudyService.getOutliers();
+    public ResponseEntity<List<OutlierDTO>> getOutliers(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Double minWeight,
+            @RequestParam(required = false) Double maxWeight,
+            @RequestParam(required = false) Integer id,
+            @RequestParam(required = false) String provType) {
+        
+        log.info("Fetching outliers with filters - startDate: {}, endDate: {}, minWeight: {}, maxWeight: {}, id: {}, provType: {}", 
+                startDate, endDate, minWeight, maxWeight, id, provType);
+        
+        List<OutlierDTO> outliers = caseStudyService.getOutliersWithFilters(startDate, endDate, minWeight, maxWeight, id, provType);
+        log.info("Fetched {} outliers after applying filters", outliers.size());
+        
         return ResponseEntity.ok(outliers);
     }
+
+
 }

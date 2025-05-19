@@ -720,4 +720,57 @@ public class CaseStudyService {
         log.info("Fetched {} outliers", rawDtos.size());
         return rawDtos;
     }
+
+    public List<OutlierDTO> getOutliersWithFilters(
+        LocalDate startDate, LocalDate endDate, Double minWeight, Double maxWeight, 
+        Integer id, String provType) {
+    
+    log.info("Fetching outliers with filters");
+    
+    // Get base outliers
+    List<OutlierDTO> allOutliers = getOutliers();
+    
+    // Apply filters
+    List<OutlierDTO> filteredOutliers = allOutliers.stream()
+        .filter(outlier -> {
+            // Filter by date if specified
+            if (startDate != null && outlier.getMovement_Date() != null 
+                    && outlier.getMovement_Date().isBefore(startDate)) {
+                return false;
+            }
+            
+            if (endDate != null && outlier.getMovement_Date() != null 
+                    && outlier.getMovement_Date().isAfter(endDate)) {
+                return false;
+            }
+            
+            // Filter by weight if specified
+            if (minWeight != null && outlier.getWeight() < minWeight) {
+                return false;
+            }
+            
+            if (maxWeight != null && outlier.getWeight() > maxWeight) {
+                return false;
+            }
+            
+            // Filter by ID if specified
+            if (id != null && outlier.getID() != id) {
+                return false;
+            }
+            
+            // Filter by provenance type if specified
+            if (provType != null && !provType.isEmpty()) {
+                // Extract letters from prov2 for matching
+                String extractedProv = outlier.getProv2() != null ? 
+                        outlier.getProv2().replaceAll("[^A-Za-z]", "") : "";
+                return extractedProv.equals(provType);
+            }
+            
+            return true;
+        })
+        .collect(Collectors.toList());
+    
+    log.info("Filtered from {} to {} outliers", allOutliers.size(), filteredOutliers.size());
+    return filteredOutliers;
+}
 }
