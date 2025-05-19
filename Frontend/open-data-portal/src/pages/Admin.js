@@ -94,12 +94,12 @@ const API_BASE_URL = 'http://localhost:8080';
 
 // Dados de exemplo para os cards
 const cardData = [
-  { title: 'Users', value: '2,567', icon: <PersonIcon sx={{ fontSize: 40, color: '#FF9800' }} /> },
-  { title: 'Admins', value: '48', icon: <AdminPanelSettingsIcon sx={{ fontSize: 40, color: '#2196F3' }} /> },
-  { title: 'Tables', value: '156', icon: <TableChartIcon sx={{ fontSize: 40, color: '#4CAF50' }} /> },
-  { title: 'Databases', value: '12', icon: <StorageIcon sx={{ fontSize: 40, color: '#9C27B0' }} /> },
-  { title: 'Reports', value: '783', icon: <CommentIcon sx={{ fontSize: 40, color: '#E91E63' }} /> },
-  { title: 'Downloads', value: '1,568', icon: <DownloadIcon sx={{ fontSize: 40, color: '#F44336' }} /> },
+  { title: 'Users', value: '2', icon: <PersonIcon sx={{ fontSize: 40, color: '#FF9800' }} /> },
+  { title: 'Admins', value: '0', icon: <AdminPanelSettingsIcon sx={{ fontSize: 40, color: '#2196F3' }} /> },
+  { title: 'Tables', value: '2', icon: <TableChartIcon sx={{ fontSize: 40, color: '#4CAF50' }} /> },
+  { title: 'Databases', value: '1', icon: <StorageIcon sx={{ fontSize: 40, color: '#9C27B0' }} /> },
+  { title: 'Reports', value: '9', icon: <CommentIcon sx={{ fontSize: 40, color: '#E91E63' }} /> },
+  { title: 'Downloads', value: '10', icon: <DownloadIcon sx={{ fontSize: 40, color: '#F44336' }} /> },
 ];
 
 const data1 = [
