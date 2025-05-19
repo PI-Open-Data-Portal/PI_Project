@@ -44,7 +44,9 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
-
+import W3Canalysis from '../components/Admin/W3CanalysisTable';
+import W3CanalysisGraphs from '../components/Admin/W3CanalysisGraphs';
+import W3CanalysisGraphs2 from '../components/Admin/W3CAnalysisGraphs2';
 
 import logo from "../assets/logopng.png";
 
@@ -82,7 +84,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const drawerWidth = 240;
@@ -584,6 +586,12 @@ function AdminDashboard() {
                             </ListItemIcon>
                             <ListItemText primary="Users" />
                         </ListItem>
+                        <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <QueryStatsIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="W3C Analysis" />
+                        </ListItem>
                     </List>
                 </Box>
             </Drawer>
@@ -943,7 +951,7 @@ function AdminDashboard() {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Nanme</TableCell>
+                    <TableCell>Name</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Function</TableCell>
                     <TableCell>Stats</TableCell>
@@ -1002,8 +1010,16 @@ function AdminDashboard() {
             </Box>
           </Paper>
         </Box>
+        <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
+        <W3Canalysis></W3Canalysis>
+        <div ></div>
+        <W3CanalysisGraphs></W3CanalysisGraphs>
+        <W3CanalysisGraphs2></W3CanalysisGraphs2>
         </Box>
+        </Box>
+        
     </Box>
+    
         );
 }
 
