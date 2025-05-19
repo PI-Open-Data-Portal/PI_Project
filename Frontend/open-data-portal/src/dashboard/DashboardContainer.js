@@ -185,16 +185,19 @@ export default function DashboardContainer() {
         data={provenanceData} 
         error={errors["provenance"]}
       />
-
+      
       <WeightStatistics 
         data={weightData} 
         error={errors["weight-statistics"]}
       />
 
-      <MonthlyProvChart 
-        data={monthlyProvData} 
-        error={errors["monthly-prov"]}
-      />
+      
+      {/*
+        <MonthlyProvChart 
+          data={monthlyProvData} 
+          error={errors["monthly-prov"]}
+        />
+        */}
 
       <WeightBoxPlotChart 
         data={weightData} 
