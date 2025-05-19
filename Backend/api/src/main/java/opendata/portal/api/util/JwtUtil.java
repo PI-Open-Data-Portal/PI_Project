@@ -11,9 +11,9 @@ public class JwtUtil {
     private final String SECRET_KEY = "secret-key"; // Use a secure key in production
     private final long EXPIRATION_TIME = 86400000; // 1 day in ms
 
-    public String generateToken(String username) {
+    public String generateToken(String email) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
