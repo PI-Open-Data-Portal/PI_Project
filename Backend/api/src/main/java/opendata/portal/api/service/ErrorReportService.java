@@ -161,6 +161,25 @@ public class ErrorReportService {
     }
     
     /**
+     * Delete an error report by ID
+     * 
+     * @param id the error report ID to delete
+     * @return true if deleted successfully, false if report not found
+     */
+    public boolean deleteErrorReport(Long id) {
+        log.info("Attempting to delete error report with ID: {}", id);
+        
+        if (errorReportRepository.existsById(id)) {
+            errorReportRepository.deleteById(id);
+            log.info("Successfully deleted error report with ID: {}", id);
+            return true;
+        } else {
+            log.warn("Error report with ID: {} not found for deletion", id);
+            return false;
+        }
+    }
+    
+    /**
      * Generate CSV content for downloading error reports
      * 
      * @param reports list of error reports
