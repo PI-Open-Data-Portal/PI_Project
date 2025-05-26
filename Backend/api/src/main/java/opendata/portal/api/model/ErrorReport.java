@@ -22,30 +22,31 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorReport {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ElementCollection
+    @Column(name = "item_ids")
     private List<Integer> itemIds;
-    
-    @Column(nullable = false)
+
+    @Column(name = "error_type", nullable = false)
     private String errorType;
-    
+
     @Column(nullable = false, length = 1000)
     private String description;
-    
+
     private String reporter;
-    
+
     @Column(nullable = false)
     private String status;
-    
-    @Column(nullable = false)
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    
-    @Column
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column
     private String severity;
 }
