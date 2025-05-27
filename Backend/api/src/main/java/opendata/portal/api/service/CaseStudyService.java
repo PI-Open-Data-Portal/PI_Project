@@ -9,6 +9,7 @@ import java.nio.file.Path; // Ensure this is the correct Path class from java.ni
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 
@@ -37,7 +39,10 @@ import jakarta.persistence.Tuple;
 import org.springframework.data.jpa.domain.Specification;
 
 import opendata.portal.api.repository.CaseStudyRepository;
+import opendata.portal.api.model.Activity;
+import opendata.portal.api.model.Agent;
 import opendata.portal.api.model.CaseStudy;
+import opendata.portal.api.model.Entity_;
 import opendata.portal.api.controller.CaseStudyApiController;
 import opendata.portal.api.dto.DisembarkationPortStatDTO;
 import opendata.portal.api.dto.NST2007_2PStatDTO;
@@ -71,6 +76,15 @@ public class CaseStudyService {
     @Autowired
     private CaseStudyRepository caseStudyRepository;
 
+    @Autowired
+    private AgentService agentService;
+
+    @Autowired
+    private ActivityService activityService;
+
+    @Autowired
+    private Entity_Service entityService;
+
     public List<CaseStudy> getCaseStudies() {
         return caseStudyRepository.findAll();
     }
@@ -89,43 +103,43 @@ public class CaseStudyService {
     private static final Logger log = LoggerFactory.getLogger(CaseStudyService.class);
 
     public Page<CaseStudy> getPaginatedCaseStudies(Pageable pageable,
-        LocalDate startDate,
-        LocalDate endDate,
-        Boolean isTranshipment,
-        String message,
-        String embarkationLocations,
-        String disembarkationLocations,
-        String type,
-        String harmonizedCode,
-        String containerPlate) {
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isTranshipment,
+            String message,
+            String embarkationLocations,
+            String disembarkationLocations,
+            String type,
+            String harmonizedCode,
+            String containerPlate) {
 
-    // Validate message if provided
-    if (message != null && !isValidMessage(message)) {
-        throw new IllegalArgumentException("Invalid message type: " + message);
+        // Validate message if provided
+        if (message != null && !isValidMessage(message)) {
+            throw new IllegalArgumentException("Invalid message type: " + message);
+        }
+
+        // Use Specification to build dynamic query with the same filters
+        Specification<CaseStudy> spec = Specification.where(null);
+
+        // Código existente para os parâmetros atuais...
+
+        // Adicionar condição para o parâmetro type
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("prov2"), type + "%"));
+        }
+
+        // Adicionar condição para o parâmetro harmonizedCode
+        if (harmonizedCode != null && !harmonizedCode.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("harmonizedCode"), harmonizedCode));
+        }
+
+        // Adicionar condição para o parâmetro containerPlate
+        if (containerPlate != null && !containerPlate.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("containerPlate"), "%" + containerPlate + "%"));
+        }
+
+        return caseStudyRepository.findAll(spec, pageable);
     }
-
-    // Use Specification to build dynamic query with the same filters
-    Specification<CaseStudy> spec = Specification.where(null);
-
-    // Código existente para os parâmetros atuais...
-
-    // Adicionar condição para o parâmetro type
-    if (type != null && !type.isEmpty()) {
-        spec = spec.and((root, query, cb) -> cb.like(root.get("prov2"), type + "%"));
-    }
-
-    // Adicionar condição para o parâmetro harmonizedCode
-    if (harmonizedCode != null && !harmonizedCode.isEmpty()) {
-        spec = spec.and((root, query, cb) -> cb.equal(root.get("harmonizedCode"), harmonizedCode));
-    }
-
-    // Adicionar condição para o parâmetro containerPlate
-    if (containerPlate != null && !containerPlate.isEmpty()) {
-        spec = spec.and((root, query, cb) -> cb.like(root.get("containerPlate"), "%" + containerPlate + "%"));
-    }
-
-    return caseStudyRepository.findAll(spec, pageable);
-}
 
     public List<NST2007_2PStatDTO> getNST2007_2PProductStats(
             LocalDate startDate,
@@ -308,17 +322,90 @@ public class CaseStudyService {
 
         log.info("Fetched {} records", results.size());
 
+        byte[] fileContent;
+
         // Generate the appropriate format
         String formatLower = format.toLowerCase();
         switch (formatLower) {
             case "csv":
-                return generateCsvFromMaps(results, columns);
+                fileContent = generateCsvFromMaps(results, columns);
+                break;
             case "parquet":
-                return generateParquetFromMaps(results, columns);
+                fileContent = generateParquetFromMaps(results, columns);
+                break;
             case "json":
             default:
-                return generateJsonFromMaps(results);
+                fileContent = generateJsonFromMaps(results);
+                break;
         }
+
+        // ---- Provenance Logging Start ----
+        try {
+            Agent downloadAgent = agentService.getAgentById(1); // Agent ID 1 for downloads
+            if (downloadAgent == null) {
+                log.warn("Agent with ID 1 not found for download provenance logging. Skipping provenance log.");
+            } else {
+                LocalDateTime now = LocalDateTime.now();
+
+                // 1. Create the Download Activity
+                Activity downloadActivity = new Activity();
+                downloadActivity.setId(UUID.randomUUID().toString());
+                downloadActivity.setDescription(
+                        String.format("Download of Case Study data as %s.", formatLower));
+                downloadActivity.setType("DataDownloadOperation");
+                downloadActivity.setStartedDate(now);
+                downloadActivity.setEndDate(now);
+                downloadActivity.getAssociatedAgents().add(downloadAgent); // Link Agent to Activity
+
+                // 2. Create Entity for the Source Table (case_study)
+                Entity_ sourceTableEntity = new Entity_();
+                sourceTableEntity.setDescription("Case study data source table: PRJ_LEI_2025.dbo.case_study");
+                sourceTableEntity.setType("DatasetTable");
+                sourceTableEntity.setResourcePath("PRJ_LEI_2025.dbo.case_study"); // As requested
+                sourceTableEntity.setCreationDate(now); // Represents the time of this access instance for provenance
+
+                // Link Source Table Entity as "used" by the Activity
+                // Entity_ is the owner of the "Used" relationship, so save it after setting its
+                // side.
+                sourceTableEntity.getUsedInActivities().add(downloadActivity);
+                entityService.saveEntity(sourceTableEntity);
+
+                // Add to activity's collection for object graph consistency and to establish
+                // the link from Activity's perspective
+                downloadActivity.getEntitiesUsingThisActivity().add(sourceTableEntity);
+
+                // 3. Create Entity for the Generated Report File
+                Entity_ reportFileEntity = new Entity_();
+                reportFileEntity.setDescription(String.format(
+                        "Downloaded Case Study report file (format: %s).", formatLower));
+                reportFileEntity.setType("DownloadedReportFile");
+                String reportFileExtension = formatLower; // e.g., "csv", "json", "parquet"
+                // Making the timestamp in path more file-system friendly
+                String timestampForPath = now.toString().replace(":", "-").replace(".", "-").replace("T", "_");
+                reportFileEntity.setResourcePath(String.format("downloaded_reports/case_studies/%s/report_%s.%s",
+                        formatLower, timestampForPath, reportFileExtension));
+                reportFileEntity.setCreationDate(now);
+                reportFileEntity.setCreatingActivity(downloadActivity); // Link Report File to its creating Activity
+
+                // Link Report File as "generatedBy" the Activity
+                downloadActivity.getCreatedEntities().add(reportFileEntity);
+
+                // Save the Activity. This will also save the reportFileEntity due to cascade
+                // (assuming Activity.createdEntities has CascadeType.ALL or PERSIST)
+                // and update relationships for entitiesUsingThisActivity.
+                activityService.saveActivity(downloadActivity);
+
+                log.info(
+                        "Provenance logged for download. Activity ID: {}, SourceTableEntity ID: {}, ReportFileEntity ID: {}",
+                        downloadActivity.getId(), sourceTableEntity.getId(), reportFileEntity.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error logging provenance for case study download: {}", e.getMessage(), e);
+            // Do not fail the download itself, just log the error.
+        }
+        // ---- Provenance Logging End ----
+
+        return fileContent;
     }
 
     /**
@@ -712,8 +799,7 @@ public class CaseStudyService {
             outlier.setProv2((String) row[2]);
             java.util.Date date = (java.util.Date) row[3]; // java.sql.Date herda de java.util.Date
             outlier.setMovement_Date(
-                new Timestamp(date.getTime()).toLocalDateTime().toLocalDate()
-            );
+                    new Timestamp(date.getTime()).toLocalDateTime().toLocalDate());
             outlier.setProv((String) row[4]);
             rawDtos.add(outlier);
         }
@@ -722,55 +808,56 @@ public class CaseStudyService {
     }
 
     public List<OutlierDTO> getOutliersWithFilters(
-        LocalDate startDate, LocalDate endDate, Double minWeight, Double maxWeight, 
-        Integer id, String provType) {
-    
-    log.info("Fetching outliers with filters");
-    
-    // Get base outliers
-    List<OutlierDTO> allOutliers = getOutliers();
-    
-    // Apply filters
-    List<OutlierDTO> filteredOutliers = allOutliers.stream()
-        .filter(outlier -> {
-            // Filter by date if specified
-            if (startDate != null && outlier.getMovement_Date() != null 
-                    && outlier.getMovement_Date().isBefore(startDate)) {
-                return false;
-            }
-            
-            if (endDate != null && outlier.getMovement_Date() != null 
-                    && outlier.getMovement_Date().isAfter(endDate)) {
-                return false;
-            }
-            
-            // Filter by weight if specified
-            if (minWeight != null && outlier.getWeight() < minWeight) {
-                return false;
-            }
-            
-            if (maxWeight != null && outlier.getWeight() > maxWeight) {
-                return false;
-            }
-            
-            // Filter by ID if specified
-            if (id != null && outlier.getID() != id) {
-                return false;
-            }
-            
-            // Filter by provenance type if specified
-            if (provType != null && !provType.isEmpty()) {
-                // Extract letters from prov2 for matching
-                String extractedProv = outlier.getProv2() != null ? 
-                        outlier.getProv2().replaceAll("[^A-Za-z]", "") : "";
-                return extractedProv.equals(provType);
-            }
-            
-            return true;
-        })
-        .collect(Collectors.toList());
-    
-    log.info("Filtered from {} to {} outliers", allOutliers.size(), filteredOutliers.size());
-    return filteredOutliers;
-}
+            LocalDate startDate, LocalDate endDate, Double minWeight, Double maxWeight,
+            Integer id, String provType) {
+
+        log.info("Fetching outliers with filters");
+
+        // Get base outliers
+        List<OutlierDTO> allOutliers = getOutliers();
+
+        // Apply filters
+        List<OutlierDTO> filteredOutliers = allOutliers.stream()
+                .filter(outlier -> {
+                    // Filter by date if specified
+                    if (startDate != null && outlier.getMovement_Date() != null
+                            && outlier.getMovement_Date().isBefore(startDate)) {
+                        return false;
+                    }
+
+                    if (endDate != null && outlier.getMovement_Date() != null
+                            && outlier.getMovement_Date().isAfter(endDate)) {
+                        return false;
+                    }
+
+                    // Filter by weight if specified
+                    if (minWeight != null && outlier.getWeight() < minWeight) {
+                        return false;
+                    }
+
+                    if (maxWeight != null && outlier.getWeight() > maxWeight) {
+                        return false;
+                    }
+
+                    // Filter by ID if specified
+                    if (id != null && outlier.getID() != id) {
+                        return false;
+                    }
+
+                    // Filter by provenance type if specified
+                    if (provType != null && !provType.isEmpty()) {
+                        // Extract letters from prov2 for matching
+                        String extractedProv = outlier.getProv2() != null
+                                ? outlier.getProv2().replaceAll("[^A-Za-z]", "")
+                                : "";
+                        return extractedProv.equals(provType);
+                    }
+
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        log.info("Filtered from {} to {} outliers", allOutliers.size(), filteredOutliers.size());
+        return filteredOutliers;
+    }
 }

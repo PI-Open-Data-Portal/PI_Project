@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface ShipDataEnhancementRepository extends JpaRepository<ShipDataEnhancement, ShipDataEnhancementId> {
     // JpaRepository already provides findAll(Pageable pageable)
     // You can add custom query methods here if needed
+
+    
 }
