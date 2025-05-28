@@ -1,5 +1,6 @@
 package opendata.portal.api.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.persistence.Entity;
 import lombok.Getter;
@@ -27,6 +28,7 @@ public class Agent {
     // Relationship: ManyToMany with Activity via 'WasAssociatedWith' table
     // 'activitiesAssociatedWithThisAgent' refers to activities this agent was
     // associated with
+    @JsonBackReference("activity-associatedAgents")
     @ManyToMany(mappedBy = "associatedAgents")
     private Set<Activity> activitiesAssociatedWithThisAgent = new HashSet<>();
 }

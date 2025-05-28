@@ -1,5 +1,8 @@
 package opendata.portal.api.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.persistence.Entity;
 import lombok.Getter;
@@ -13,6 +16,7 @@ import java.util.Set;
 @Table(name = "Entity")
 @Getter
 @Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Entity_ {
 
     @Id
@@ -37,12 +41,14 @@ public class Entity_ {
 
     // Relationship: ManyToOne with Activity (this Entity was created by an
     // Activity)
+    @JsonBackReference("activity-createdEntities")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_activity") // This is the foreign key in Entity table
     private Activity creatingActivity;
 
     // Relationship: ManyToMany with Activity via 'Used' table
     // 'usedInActivities' refers to activities where this entity was used
+    @JsonBackReference("activity-entitiesUsingThisActivity")
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "Used", joinColumns = @JoinColumn(name = "id_entity"), inverseJoinColumns = @JoinColumn(name = "id_activity"))
     private Set<Activity> usedInActivities = new HashSet<>();

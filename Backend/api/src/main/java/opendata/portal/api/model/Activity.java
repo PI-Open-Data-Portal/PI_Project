@@ -1,5 +1,6 @@
 package opendata.portal.api.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,15 +32,18 @@ public class Activity {
     private LocalDateTime endDate;
 
     // Relationship: An Activity can be the 'creatingActivity' for multiple Entities
+    @JsonManagedReference("activity-createdEntities")
     @OneToMany(mappedBy = "creatingActivity", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Entity_> createdEntities = new HashSet<>();
 
     // Relationship: ManyToMany with Entity via 'Used' table
     // 'entitiesUsingThisActivity' refers to entities that "used" this activity
+    @JsonManagedReference("activity-entitiesUsingThisActivity")
     @ManyToMany(mappedBy = "usedInActivities")
     private Set<Entity_> entitiesUsingThisActivity = new HashSet<>();
 
     // Relationship: ManyToMany with Agent via 'WasAssociatedWith' table
+    @JsonManagedReference("activity-associatedAgents")
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "WasAssociatedWith", joinColumns = @JoinColumn(name = "id_activity"), inverseJoinColumns = @JoinColumn(name = "id_agent"))
     private Set<Agent> associatedAgents = new HashSet<>();

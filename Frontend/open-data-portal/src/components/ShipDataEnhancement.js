@@ -282,15 +282,44 @@ const ShipDataEnhancement = () => {
         setPage(0);
     };
 
-    const handleAcceptSuggestion = (suggestionId) => {
-        console.log("Accepting suggestion:", suggestionId);
-        // Placeholder: Implement API call to accept suggestion
-        // After successful API call, you might want to refetch or update the UI
+    const handleAcceptSuggestion = async (suggestionId) => {
+        if (!suggestionId || !suggestionId.imoCode || !suggestionId.versionNumber) {
+            console.error("Invalid suggestionId for accept:", suggestionId);
+            setError("Invalid data for approving suggestion.");
+            return;
+        }
+        setLoading(true);
+        try {
+            await axios.post(`${API_BASE_URL}/approve`, {
+                imoCode: suggestionId.imoCode,
+                versionNumber: suggestionId.versionNumber,
+            });
+            fetchSuggestions(); // Refetch data to update the list
+        } catch (err) {
+            console.error("Error accepting suggestion:", err);
+            setError(err.response?.data?.message || err.message || 'Failed to accept suggestion.');
+            setLoading(false); // Stop loading only if there's an error, fetchSuggestions will handle it otherwise
+        }
     };
 
-    const handleRejectSuggestion = (suggestionId) => {
-        console.log("Rejecting suggestion:", suggestionId);
-        // Placeholder: Implement API call to reject suggestion
+    const handleRejectSuggestion = async (suggestionId) => {
+        if (!suggestionId || !suggestionId.imoCode || !suggestionId.versionNumber) {
+            console.error("Invalid suggestionId for reject:", suggestionId);
+            setError("Invalid data for rejecting suggestion.");
+            return;
+        }
+        setLoading(true);
+        try {
+            await axios.post(`${API_BASE_URL}/delete`, { // Assuming /delete is the endpoint for rejecting
+                imoCode: suggestionId.imoCode,
+                versionNumber: suggestionId.versionNumber,
+            });
+            fetchSuggestions(); // Refetch data to update the list
+        } catch (err) {
+            console.error("Error rejecting suggestion:", err);
+            setError(err.response?.data?.message || err.message || 'Failed to reject suggestion.');
+            setLoading(false); // Stop loading only if there's an error, fetchSuggestions will handle it otherwise
+        }
     };
 
     // Helper function to determine if a row has correctable suggestions (for row filtering)
