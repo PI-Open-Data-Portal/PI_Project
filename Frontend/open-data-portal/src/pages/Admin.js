@@ -700,12 +700,12 @@ function AdminDashboard() {
                             </ListItemIcon>
                             <ListItemText primary="Users" />
                         </ListItem>
-                        <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                        {/* <ListItem button onClick={() => scrollToSection(reportsRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
                             <ListItemIcon sx={{ color: '#ffffff' }}>
                                 <QueryStatsIcon />
                             </ListItemIcon>
                             <ListItemText primary="W3C Analysis" />
-                        </ListItem>
+                        </ListItem> */}
                         <ListItem button onClick={() => scrollToSection(shipDataEnhancementRef)} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
                             <ListItemIcon sx={{ color: '#ffffff' }}>
                                 <ShipIcon />
@@ -1266,12 +1266,12 @@ function AdminDashboard() {
                 </Box>
 
                 {/* W3C Analysis Section */}
-                <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
+                {/* <Box ref={reportsRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
                     <W3Canalysis></W3Canalysis>
                     <div ></div>
                     <W3CanalysisGraphs></W3CanalysisGraphs>
                     <W3CanalysisGraphs2></W3CanalysisGraphs2>
-                </Box>
+                </Box> */}
 
                 {/* Placeholder for Ship Data Enhancement Section */}
                 <Box ref={shipDataEnhancementRef} sx={{ scrollMarginTop: '64px', mb: 4 }}>
