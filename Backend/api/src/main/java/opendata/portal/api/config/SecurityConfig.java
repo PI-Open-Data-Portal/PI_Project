@@ -12,23 +12,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/**",
-                                "/apiV1/errorReports/**",
-                                "/apiV1/auth/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
-                        .requestMatchers(request -> {
-                            String origin = request.getHeader("Origin");
-                            return origin != null && origin.equals("http://localhost:3000");
-                        }).permitAll()
-                )
-                .httpBasic();
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/apiV1/casestudy/**",
+                    "/apiV1/ContainerDetails/**",
+                    "/apiV1/errorReports/**",
+                    "/apiV1/auth/**",
+                    "/apiV1/auth/users",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-resources/**",
+                    "/webjars/**"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .httpBasic(); // ou .formLogin() se usares forms
         return http.build();
     }
+
 }
