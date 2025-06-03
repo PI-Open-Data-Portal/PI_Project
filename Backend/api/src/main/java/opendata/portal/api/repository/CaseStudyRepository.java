@@ -15,7 +15,7 @@ import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-
+import opendata.portal.api.dto.OutlierDTO;
 import opendata.portal.api.model.CaseStudy;
 
 import java.time.LocalDate;
@@ -139,5 +139,33 @@ public interface CaseStudyRepository extends JpaRepository<CaseStudy, Integer>, 
                         @Param("embarkationLocations") String embarkationLocations,
                         @Param("disembarkationLocations") String disembarkationLocations);
 
-
+        // Outlier Detection Query
+        @Query(nativeQuery = true, value = "WITH Q123 AS ( " +
+                        "SELECT " +
+                        "cs.Weight, cs.ID, cs.prov2, cs.Movement_Date, cs.prov, " +
+                        "PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY cs.Weight) OVER () AS Q1, " +
+                        "PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY cs.Weight) OVER () AS Median, " +
+                        "PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY cs.Weight) OVER () AS Q3 " +
+                        "FROM case_study cs " +
+                        "), " +
+                        "IQR_Calc AS ( " +
+                        "SELECT " +
+                        "Weight, " +
+                        "ID, " +
+                        "prov2, " +
+                        "prov, " +
+                        "Movement_Date, " +
+                        "Q1, " +
+                        "Median, " +
+                        "Q3, " +
+                        "(Q3 - Q1) AS IQR, " +
+                        "Q1 - 1.5 * (Q3 - Q1) AS LowerBound, " +
+                        "Q3 + 1.5 * (Q3 - Q1) AS UpperBound " +
+                        "FROM Q123 " +
+                        ") " +
+                        "SELECT " +
+                        "Weight, ID, prov2, Movement_Date, prov " +
+                        "FROM IQR_Calc " +
+                        "WHERE Weight < LowerBound OR Weight > UpperBound")
+        List<Object[]> findOutliers();
 }

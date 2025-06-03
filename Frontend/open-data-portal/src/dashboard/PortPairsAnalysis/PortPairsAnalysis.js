@@ -1,6 +1,5 @@
 // PortPairsAnalysis.jsx
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import React, { useState, useCallback } from "react";
 import {
   Card,
   CardHeader,
@@ -16,23 +15,10 @@ import PortPairsFilters from "./PortPairsFilters";
 import PortPairsCharts from "./PortPairsCharts";
 import PortPairsTable from "./PortPairsTable";
 
-export default function PortPairsAnalysis() {
-  // State for port pairs data
-  const [portPairsData, setPortPairsData] = useState([]);
-  const [filteredPortPairsData, setFilteredPortPairsData] = useState([]);
-  const [allPorts, setAllPorts] = useState([]);
-  
-  // Filter state
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [message, setMessage] = useState("");
-  const [embarkationLocations, setEmbarkationLocations] = useState([]);
-  const [disembarkationLocations, setDisembarkationLocations] = useState([]);
+export default function PortPairsAnalysis({ data, filters, setFilters, error }) {
+  // Local state
+  const [filteredPortPairsData, setFilteredPortPairsData] = useState(data);
   const [showFilters, setShowFilters] = useState(false);
-  
-  // UI state
-  const [isLoading, setIsLoading] = useState(true);
-  const [errors, setErrors] = useState({});
   const [tabValue, setTabValue] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -44,42 +30,13 @@ export default function PortPairsAnalysis() {
     '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
   ];
 
-  // Function to fetch port pairs data
-  const fetchPortPairsData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Build query params
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate.toISOString().split('T')[0]);
-      if (endDate) params.append('endDate', endDate.toISOString().split('T')[0]);
-      if (message) params.append('message', message);
-      if (embarkationLocations.length > 0) params.append('embarkationLocations', embarkationLocations.join(','));
-      if (disembarkationLocations.length > 0) params.append('disembarkationLocations', disembarkationLocations.join(','));
-      
-      const url = `http://localhost:8080/apiV1/casestudy/v2/port-pairs${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await axios.get(url);
-      
-      setPortPairsData(response.data);
-      setFilteredPortPairsData(response.data);
-      
-      // Extract all unique ports for filters
-      const ports = new Set();
-      response.data.forEach(pair => {
-        ports.add(pair.embarkationPort);
-        ports.add(pair.disembarkationPort);
-      });
-      setAllPorts(Array.from(ports).sort());
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching port pairs data", error);
-      setErrors(prev => ({ ...prev, portPairs: error.message }));
-      setIsLoading(false);
-    }
-  };
+  // Get unique ports for filters
+  const allPorts = [...new Set([
+    ...data.map(pair => pair.embarkationPort),
+    ...data.map(pair => pair.disembarkationPort)
+  ])].sort();
 
-  // Function to get top embarkation ports
+  // Functions to get top ports remain the same
   const getTopEmbarkationPorts = useCallback(() => {
     // Group by embarkation port
     const embarkationCounts = {};
@@ -95,7 +52,6 @@ export default function PortPairsAnalysis() {
       .slice(0, 10);
   }, [filteredPortPairsData]);
 
-  // Function to get top disembarkation ports
   const getTopDisembarkationPorts = useCallback(() => {
     // Group by disembarkation port
     const disembarkationCounts = {};
@@ -111,24 +67,10 @@ export default function PortPairsAnalysis() {
       .slice(0, 10);
   }, [filteredPortPairsData]);
 
-  // Handle tab change
+  // Handlers remain the same
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
-
-  // Handle filters reset
-  const handleFiltersReset = () => {
-    setStartDate(null);
-    setEndDate(null);
-    setMessage("");
-    setEmbarkationLocations([]);
-    setDisembarkationLocations([]);
-  };
-
-  // Load data on component mount
-  useEffect(() => {
-    fetchPortPairsData();
-  }, []);
 
   return (
     <Card elevation={3} sx={{ marginBottom: 4 }}>
@@ -155,7 +97,7 @@ export default function PortPairsAnalysis() {
         }
       />
       <CardContent>
-        {errors.portPairs && (
+        {error && (
           <Alert 
             severity="error" 
             sx={{ 
@@ -163,25 +105,25 @@ export default function PortPairsAnalysis() {
               fontFamily: "'Kdam Thmor Pro', sans-serif" 
             }}
           >
-            Error loading port pairs data: {errors.portPairs}
+            Error loading port pairs data: {error}
           </Alert>
         )}
         
         {showFilters && (
           <PortPairsFilters 
-            startDate={startDate}
-            setStartDate={setStartDate}
-            endDate={endDate}
-            setEndDate={setEndDate}
-            message={message}
-            setMessage={setMessage}
-            embarkationLocations={embarkationLocations}
-            setEmbarkationLocations={setEmbarkationLocations}
-            disembarkationLocations={disembarkationLocations}
-            setDisembarkationLocations={setDisembarkationLocations}
+            startDate={filters.startDate}
+            setStartDate={(date) => setFilters({ ...filters, startDate: date })}
+            endDate={filters.endDate}
+            setEndDate={(date) => setFilters({ ...filters, endDate: date })}
+            message={filters.message}
+            setMessage={(msg) => setFilters({ ...filters, message: msg })}
+            embarkationLocations={filters.embarkationLocations}
+            setEmbarkationLocations={(locs) => setFilters({ ...filters, embarkationLocations: locs })}
+            disembarkationLocations={filters.disembarkationLocations}
+            setDisembarkationLocations={(locs) => setFilters({ ...filters, disembarkationLocations: locs })}
             allPorts={allPorts}
-            onReset={handleFiltersReset}
-            onApply={fetchPortPairsData}
+            onReset={() => setFilters({ startDate: null, endDate: null, message: "", embarkationLocations: [], disembarkationLocations: [] })}
+            onApply={() => setFilteredPortPairsData(data)}
           />
         )}
 

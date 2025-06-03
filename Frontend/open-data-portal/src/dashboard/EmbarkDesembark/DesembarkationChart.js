@@ -19,9 +19,8 @@ import {
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 
-export default function DisembarkationChart() {
-  const [data, setData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
+export default function DisembarkationChart({ data, error }) {
+  const [filteredData, setFilteredData] = useState(data);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState("");
@@ -34,47 +33,13 @@ export default function DisembarkationChart() {
   const [embarkationLocations, setEmbarkationLocations] = useState("");
 
   useEffect(() => {
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (startDate) params.append("startDate", startDate);
-    if (endDate) params.append("endDate", endDate);
-    if (isTranshipment !== null) params.append("isTranshipment", isTranshipment);
-    if (message) params.append("message", message);
-    if (embarkationLocations) params.append("embarkationLocations", embarkationLocations);
-    
-    // Fetch data with parameters
-    axios.get(`http://localhost:8080/apiV1/casestudy/v2/port-pairs?${params.toString()}`)
-      .then((response) => {
-        console.log("Received data:", response.data);
-        
-        // Process data to aggregate by disembarkation port
-        const portCounts = {};
-        response.data.forEach(item => {
-          if (!portCounts[item.disembarkationPort]) {
-            portCounts[item.disembarkationPort] = 0;
-          }
-          portCounts[item.disembarkationPort] += item.count;
-        });
-        
-        // Convert to array format for charts and tables
-        const processedData = Object.keys(portCounts).map(port => ({
-          disembarkationPort: port,
-          count: portCounts[port]
-        }));
-        
-        setData(processedData);
-        setFilteredData(processedData);
-      })
-      .catch((error) => console.error("Error fetching data", error));
-  }, [startDate, endDate, isTranshipment, message, embarkationLocations]);
-
-  useEffect(() => {
+    // Filter logic here using the data prop instead of fetching
     const filtered = data.filter(item =>
       item.disembarkationPort.toLowerCase().includes(search.toLowerCase())
     );
     setFilteredData(filtered);
     setPage(0);
-  }, [search, data]);
+  }, [data, search]);
 
 return (
 

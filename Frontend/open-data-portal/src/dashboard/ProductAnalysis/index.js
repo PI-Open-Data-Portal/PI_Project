@@ -21,30 +21,8 @@ const COLORS = [
   '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
 ];
 
-const ProductAnalysis = () => {
-  const [productData, setProductData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+const ProductAnalysis = ({ data, error }) => {
   const [tabValue, setTabValue] = useState(0);
-
-  useEffect(() => {
-    fetchProductData();
-  }, []);
-
-  const fetchProductData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get("http://localhost:8080/apiV1/casestudy/2p-products");
-      // Sort data by count in descending order
-      const sortedData = response.data.sort((a, b) => b.count - a.count);
-      setProductData(sortedData);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching product data", error);
-      setError(error.message);
-      setIsLoading(false);
-    }
-  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -84,33 +62,27 @@ const ProductAnalysis = () => {
           </Alert>
         )}
         
-        {isLoading ? (
-          <LoadingSpinner message="Loading product data..." />
-        ) : (
-          <>
-            <Box sx={{ 
-              borderBottom: 1, 
-              borderColor: 'divider', 
-              marginBottom: 2,
-              fontFamily: "'Kdam Thmor Pro', sans-serif"
-            }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange} 
-                centered
-                sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
-              >
-                <Tab label="Bar Chart" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
-                <Tab label="Pie Chart" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
-              </Tabs>
-            </Box>
+        <Box sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider', 
+          marginBottom: 2,
+          fontFamily: "'Kdam Thmor Pro', sans-serif"
+        }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            centered
+            sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }}
+          >
+            <Tab label="Bar Chart" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
+            <Tab label="Pie Chart" sx={{ fontFamily: "'Kdam Thmor Pro', sans-serif" }} />
+          </Tabs>
+        </Box>
 
-            {tabValue === 0 && <ProductBarChart data={productData} colors={COLORS} />}
-            {tabValue === 1 && <ProductPieChart data={productData} colors={COLORS} />}
-            
-            <ProductTable data={productData} colors={COLORS} />
-          </>
-        )}
+        {tabValue === 0 && <ProductBarChart data={data} colors={COLORS} />}
+        {tabValue === 1 && <ProductPieChart data={data} colors={COLORS} />}
+        
+        <ProductTable data={data} colors={COLORS} />
       </CardContent>
     </Card>
   );

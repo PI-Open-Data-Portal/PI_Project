@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import opendata.portal.api.service.CaseStudyService;
 import opendata.portal.api.dto.NST2007_2PStatDTO;
+import opendata.portal.api.dto.OutlierDTO;
 import opendata.portal.api.dto.Prov2PrefixStatDTO;
 import opendata.portal.api.dto.WeightStatisticsDTO;
 import opendata.portal.api.model.CaseStudy;
@@ -67,13 +68,15 @@ public class CaseStudyApiController {
             @RequestParam(required = false) String message,
             @RequestParam(required = false) String embarkationLocations,
             @RequestParam(required = false) String disembarkationLocations,
-            @RequestParam(required = false) @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type) {
+            @RequestParam(required = false) @Pattern(regexp = "^(T|ML|C)$", message = "Type must be T, ML, or C") String type,
+            @RequestParam(required = false) String harmonizedCode,
+            @RequestParam(required = false) String containerPlate) {
         log.info("Getting all case studies with pages");
         // validateSortProperties(pageable.getSort());
         Page<CaseStudy> caseStudies = caseStudyService.getPaginatedCaseStudies(pageable, startDate, endDate,
-                isTranshipment, message,
-                embarkationLocations, disembarkationLocations, type);
-        return ResponseEntity.ok(assembler.toModel(caseStudies));
+            isTranshipment, message, embarkationLocations, disembarkationLocations, type, 
+            harmonizedCode, containerPlate);
+            return ResponseEntity.ok(assembler.toModel(caseStudies));
     }
 
     @Operation(summary = "Get case study by id")
@@ -262,4 +265,24 @@ public class CaseStudyApiController {
                     .body("Error while processing the request: " + e.getMessage());
         }
     }
+
+    @GetMapping("/outliers")
+    public ResponseEntity<List<OutlierDTO>> getOutliers(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Double minWeight,
+            @RequestParam(required = false) Double maxWeight,
+            @RequestParam(required = false) Integer id,
+            @RequestParam(required = false) String provType) {
+        
+        log.info("Fetching outliers with filters - startDate: {}, endDate: {}, minWeight: {}, maxWeight: {}, id: {}, provType: {}", 
+                startDate, endDate, minWeight, maxWeight, id, provType);
+        
+        List<OutlierDTO> outliers = caseStudyService.getOutliersWithFilters(startDate, endDate, minWeight, maxWeight, id, provType);
+        log.info("Fetched {} outliers after applying filters", outliers.size());
+        
+        return ResponseEntity.ok(outliers);
+    }
+
+
 }
